@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,6 +8,26 @@ namespace PrimarSql.Data.Extensions
 {
     internal static class AttributeValueExtension
     {
+        public static object ToValue(this AttributeValue value)
+        {
+            if (value.IsLSet)
+                return value.L.Select(v => v.ToValue()).ToList();
+
+            if (value.IsMSet)
+                return string.Join(", ", value.M);
+
+            if (value.IsBOOLSet)
+                return value.BOOL;
+
+            if (value.SS.Count > 0)
+                return value.SS;
+
+            if (!string.IsNullOrEmpty(value.N))
+                return double.Parse(value.N);
+
+            return value.S;
+        }
+
         public static AttributeValue ToAttributeValue(this double value)
         {
             return new AttributeValue
@@ -94,7 +115,7 @@ namespace PrimarSql.Data.Extensions
                 NS = values.Select(value => value.ToString()).ToList()
             };
         }
-        
+
         public static AttributeValue ToAttributeValue(this IEnumerable<string> values)
         {
             return new AttributeValue
