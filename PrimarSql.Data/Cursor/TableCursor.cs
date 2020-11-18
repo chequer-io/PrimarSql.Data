@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Cursor.Providers;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Sources;
@@ -12,17 +13,15 @@ namespace PrimarSql.Data.Cursor
     // TODO: Expression
     public class TableCursor : DataCursor
     {
-        private Dictionary<string, AttributeValue>[] _datas { get; set; }
-
-        private bool _hasRows = true;
-
+        private IDataProvider DataProvider { get; set; }
+        
         public QueryContext Context { get; }
 
         public SelectQueryInfo QueryInfo { get; }
 
         public override bool IsClosed => false;
 
-        public override bool HasRows => _hasRows;
+        public override bool HasRows => DataProvider.HasRows;
 
         public override int RecordsAffected => -1;
 
@@ -30,6 +29,13 @@ namespace PrimarSql.Data.Cursor
         {
             Context = context;
             QueryInfo = queryInfo;
+
+            DataProvider = QueryInfo.TableSource switch
+            {
+                AtomTableSource _ => new TableDataProvider(Context, QueryInfo),
+                SubquerySource _ => new SubqueryDataProvider(Context, QueryInfo),
+                _ => DataProvider
+            };
         }
 
         public override DataTable GetSchemaTable()
@@ -39,41 +45,12 @@ namespace PrimarSql.Data.Cursor
 
         public override bool Read()
         {
-            Fetch();
-
-            CurrentRow = _datas.Select(data =>
-            {
-                return data.Select(c =>
-                {
-                    var value = c.Value.ToValue();
-                    var dataType = value.GetType();
-
-                    return new DataCell
-                    {
-                        Data = value,
-                        DataType = dataType,
-                        TypeName = dataType.Name,
-                        Name = c.Key,
-                    };
-                }).ToArray();
-            }).First();
-
-            return false;
+            if (!DataProvider.Next())
+                return false;
+            
+            CurrentRow = DataProvider.Current;
+            return true;
         }
 
-        // TODO: WHERE Expression
-        private void Fetch()
-        {
-            if (QueryInfo.TableSource is AtomTableSource atomTableSource)
-            {
-                var request = new ScanRequest
-                {
-                    TableName = atomTableSource.TableName
-                };
-
-                var scanResult = Context.Client.ScanAsync(request).Result;
-                _datas = scanResult.Items.ToArray();
-            }
-        }
     }
 }
