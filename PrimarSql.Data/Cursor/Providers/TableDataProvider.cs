@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Extensions;
@@ -13,6 +13,8 @@ namespace PrimarSql.Data.Cursor.Providers
         private DataCell[][] _datas;
         private int _index = 0;
 
+        private TableDescription TableDescription { get; }
+
         public QueryContext Context { get; }
 
         public SelectQueryInfo QueryInfo { get; }
@@ -21,10 +23,19 @@ namespace PrimarSql.Data.Cursor.Providers
 
         public DataCell[] Current { get; private set; }
 
+        public string TableName =>
+            (QueryInfo.TableSource as AtomTableSource)?.TableName ?? throw new InvalidOperationException("TableSource is not AtomTableSource.");
+
         public TableDataProvider(QueryContext context, SelectQueryInfo queryInfo)
         {
             Context = context;
             QueryInfo = queryInfo;
+            TableDescription = context.GetTableDescription(TableName);
+        }
+
+        public DataTable GetSchemaTable()
+        {
+            return null;
         }
 
         public bool Next()
@@ -32,12 +43,13 @@ namespace PrimarSql.Data.Cursor.Providers
             if (_datas == null || _datas.Length <= _index)
             {
                 _index = 0;
+
                 if (!Fetch())
                     return false;
             }
 
             Current = _datas[_index++];
-            
+
             return true;
         }
 

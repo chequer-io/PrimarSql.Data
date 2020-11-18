@@ -11,7 +11,7 @@ namespace PrimarSql.Data.Planners
         public override DbDataReader Execute()
         {
             return new PrimarSqlDataReader(
-                new TableCursor(QueryContext, QueryInfo)
+                new SelectCursor(QueryContext, QueryInfo)
             );
         }
     }

@@ -11,7 +11,7 @@ using PrimarSql.Data.Sources;
 namespace PrimarSql.Data.Cursor
 {
     // TODO: Expression
-    public class TableCursor : DataCursor
+    public class SelectCursor : DataCursor
     {
         private IDataProvider DataProvider { get; set; }
         
@@ -25,7 +25,7 @@ namespace PrimarSql.Data.Cursor
 
         public override int RecordsAffected => -1;
 
-        public TableCursor(QueryContext context, SelectQueryInfo queryInfo)
+        public SelectCursor(QueryContext context, SelectQueryInfo queryInfo)
         {
             Context = context;
             QueryInfo = queryInfo;

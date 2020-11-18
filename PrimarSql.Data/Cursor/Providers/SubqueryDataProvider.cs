@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Sources;
 
@@ -19,7 +20,12 @@ namespace PrimarSql.Data.Cursor.Providers
 
             InnerDataProvider = new TableDataProvider(context, subquerySource.SubqueryInfo);
         }
-        
+
+        public DataTable GetSchemaTable()
+        {
+            return InnerDataProvider.GetSchemaTable();
+        }
+
         public bool Next()
         {
             return InnerDataProvider.Next();

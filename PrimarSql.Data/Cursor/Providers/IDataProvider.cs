@@ -1,4 +1,5 @@
-﻿using PrimarSql.Data.Models;
+﻿using System.Data;
+using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Cursor.Providers
 {
@@ -7,6 +8,8 @@ namespace PrimarSql.Data.Cursor.Providers
         bool HasRows { get; }
         
         DataCell[] Current { get; }
+
+        DataTable GetSchemaTable();
         
         bool Next();
     }
