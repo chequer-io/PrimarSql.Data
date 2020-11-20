@@ -10,6 +10,9 @@ namespace PrimarSql.Data.Extensions
     {
         public static object ToValue(this AttributeValue value)
         {
+            if (value.NULL)
+                return DBNull.Value;
+
             if (value.IsLSet)
                 return value.L.Select(v => v.ToValue()).ToList();
 
@@ -26,6 +29,27 @@ namespace PrimarSql.Data.Extensions
                 return double.Parse(value.N);
 
             return value.S;
+        }
+
+        public static AttributeValue ToAttributeValue(this object value)
+        {
+            return value switch
+            {
+                double d => d.ToAttributeValue(),
+                float f => f.ToAttributeValue(),
+                int i => i.ToAttributeValue(),
+                uint ui => ui.ToAttributeValue(),
+                long l => l.ToAttributeValue(),
+                ulong ul => ul.ToAttributeValue(),
+                short sh => sh.ToAttributeValue(),
+                ushort ush => ush.ToAttributeValue(),
+                bool b => b.ToAttributeValue(),
+                string s => s.ToAttributeValue(),
+                IEnumerable<int> iList => iList.ToAttributeValue(),
+                IEnumerable<string> sList => sList.ToAttributeValue(),
+                DBNull dbNull => dbNull.ToAttributeValue(),
+                _ => null
+            };
         }
 
         public static AttributeValue ToAttributeValue(this double value)
@@ -121,6 +145,14 @@ namespace PrimarSql.Data.Extensions
             return new AttributeValue
             {
                 SS = values.ToList()
+            };
+        }
+
+        public static AttributeValue ToAttributeValue(this DBNull _)
+        {
+            return new AttributeValue
+            {
+                NULL = true
             };
         }
     }
