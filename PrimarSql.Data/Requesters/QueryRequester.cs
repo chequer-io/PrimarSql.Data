@@ -10,6 +10,7 @@ namespace PrimarSql.Data.Requesters
         private int _remainSkip = 0;
         private List<Dictionary<string, AttributeValue>> _items;
         private int _index = 0;
+        private Dictionary<string, AttributeValue> _exclusiveStartKey;
         
         protected override void Initialize()
         {
@@ -25,9 +26,6 @@ namespace PrimarSql.Data.Requesters
 
         public override bool Next()
         {
-            if (!HasRows)
-                return false;
-
             if (_remainSkip != 0 && !SkipOffset())
                 return false;
 
@@ -46,6 +44,9 @@ namespace PrimarSql.Data.Requesters
 
         private bool Fetch()
         {
+            if (!HasRows)
+                return false;
+            
             var queryRequest = new QueryRequest
             {
                 TableName = TableName,
@@ -53,18 +54,20 @@ namespace PrimarSql.Data.Requesters
                 ExpressionAttributeValues = ExpressionAttributeValues.ToDictionary(kv => kv.Key, kv => kv.Value),
                 ScanIndexForward = !QueryInfo.OrderDescend,
                 FilterExpression = string.IsNullOrWhiteSpace(FilterExpression) ? null : FilterExpression.Trim(),
-                KeyConditionExpression = HashKey + (SortKey != null ? " AND " + SortKey : "")
+                KeyConditionExpression = HashKey + (SortKey != null ? " AND " + SortKey : string.Empty),
+                ExclusiveStartKey = _exclusiveStartKey,
             };
 
             if (!string.IsNullOrEmpty(IndexName))
                 queryRequest.IndexName = IndexName;
 
-            _items = Client.QueryAsync(queryRequest).Result.Items;
+            var queryResult = Client.QueryAsync(queryRequest).Result;
+            _items = queryResult.Items;
 
-            if (_items.Count == 0)
-                return false;
+            if (queryResult.LastEvaluatedKey.Count == 0)
+                HasRows = false;
             
-            return true;
+            return _items.Count != 0;
         }
         
         private bool SkipOffset()
