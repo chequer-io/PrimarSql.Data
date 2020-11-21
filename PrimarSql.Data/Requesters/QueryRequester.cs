@@ -31,10 +31,12 @@ namespace PrimarSql.Data.Requesters
             if (_remainSkip != 0 && !SkipOffset())
                 return false;
 
-            if (_items == null || _items.Count >= _index)
+            if (_items == null || _items.Count <= _index)
             {
                 if (!Fetch())
                     return false;
+
+                _index = 0;
             }
             
             Current = _items[_index++];

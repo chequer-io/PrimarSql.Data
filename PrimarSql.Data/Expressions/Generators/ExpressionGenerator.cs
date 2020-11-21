@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Expressions.Generators
 {
@@ -32,14 +33,15 @@ namespace PrimarSql.Data.Expressions.Generators
             Context = new GeneratorContext();
 
             SetPrimaryKey();
-            AnalyzeInternal(Expression, null, 0);
+            var valueManager = new AttributeValueManager();
+            var condition = AnalyzeInternal(Expression, null, 0);
             ValidatePrimaryKey();
 
             return new ExpressionGenerateResult
             {
-                HashKey = Context.HashKeys.FirstOrDefault(),
-                SortKey = Context.SortKeys.FirstOrDefault(),
-                FilterExpression = string.Join(" ", Context.Buffers.Select(b => b?.ToString() ?? string.Empty)),
+                HashKey = Context.HashKeys.FirstOrDefault().Key,
+                SortKey = Context.SortKeys.FirstOrDefault().Key,
+                FilterExpression = condition?.ToExpression(valueManager),
                 ExpressionAttributeNames = Context.AttributeNames,
                 ExpressionAttributeValues = Context.AttributeValues
             };
@@ -99,27 +101,19 @@ namespace PrimarSql.Data.Expressions.Generators
             if (Context.HashKeys.Count > 1)
                 Context.HashKeys.Clear();
 
-            if (Context.SortKeys.Count > 1 || (Context.SortKeys.Count == 1 && Context.HashKeys.Count != 1))
+            if (Context.SortKeys.Count > 1 || Context.SortKeys.Count == 1 && Context.HashKeys.Count != 1)
                 Context.SortKeys.Clear();
 
             if (Context.HashKeys.Count == 1)
             {
-                var hashKey = Context.HashKeys[0];
-
-                for (int i = hashKey.StartToken; i <= hashKey.EndToken; i++)
-                {
-                    Context.Buffers[i] = null;
-                }
+                var hashKey = Context.HashKeys.FirstOrDefault();
+                hashKey.Value.IsActivated = false;
             }
 
             if (Context.SortKeys.Count == 1)
             {
-                var sortKey = Context.SortKeys[0];
-
-                for (int i = sortKey.StartToken; i <= sortKey.EndToken; i++)
-                {
-                    Context.Buffers[i] = null;
-                }
+                var sortKey = Context.SortKeys.FirstOrDefault();
+                sortKey.Value.IsActivated = false;
             }
         }
     }

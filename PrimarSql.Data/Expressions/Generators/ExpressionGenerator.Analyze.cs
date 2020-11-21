@@ -2,7 +2,7 @@
 using System.Linq;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
-using PrimarSql.Data.Models.ExpressionBuffers;
+using PrimarSql.Data.Models.Conditions;
 
 namespace PrimarSql.Data.Expressions.Generators
 {
@@ -12,7 +12,7 @@ namespace PrimarSql.Data.Expressions.Generators
 
         private static readonly string[] _comparisonOperator = { "=", ">", "<", "<=", ">=", "<>", "!=", "<=>" };
 
-        private AnalyzeResult AnalyzeInternal(IExpression expression, IExpression parent, int depth)
+        private ICondition AnalyzeInternal(IExpression expression, IExpression parent, int depth)
         {
             switch (expression)
             {
@@ -30,7 +30,7 @@ namespace PrimarSql.Data.Expressions.Generators
 
                 case MemberExpression columnExpression:
                     return AnalyzeColumnExpression(columnExpression, parent, depth);
-                
+
                 case SelectExpression selectExpression:
                     throw new NotSupportedException("Not Supported Subquery Expression Feature.");
             }
@@ -39,153 +39,109 @@ namespace PrimarSql.Data.Expressions.Generators
         }
 
         #region MultipleExpression
-        private AnalyzeResult AnalyzeMultipleExpression(MultipleExpression expression, IExpression parent, int depth)
+        private ICondition AnalyzeMultipleExpression(MultipleExpression expression, IExpression parent, int depth)
         {
             if (!(parent is InExpression))
                 return AnalyzeNestedExpression(expression, parent, depth);
 
-            Context.Append("(");
-
-            for (int i = 0; i < expression.Expressions.Length; i++)
-            {
-                var singleExpression = expression.Expressions[i];
-                AnalyzeInternal(singleExpression, expression, depth);
-
-                if (i != expression.Expressions.Length - 1)
-                    Context.Append(",");
-            }
-
-            Context.Append(")");
-
-            return AnalyzeResult.Success;
+            return new MultipleCondition(
+                expression.Expressions.Select(singleExpression => AnalyzeInternal(singleExpression, expression, depth))
+            );
         }
 
-        private AnalyzeResult AnalyzeNestedExpression(MultipleExpression expression, IExpression parent, int depth)
+        private ICondition AnalyzeNestedExpression(MultipleExpression expression, IExpression parent, int depth)
         {
             if (expression.Expressions.Length > 1)
                 throw new InvalidOperationException("Too many expressions.");
 
-            Context.Append("(");
-            var result = AnalyzeInternal(expression.Expressions[0], expression, depth);
-            Context.Append(")");
-
-            if (IsHashOrSortKey(result))
-            {
-                result.Key.StartToken -= 1;
-                result.Key.EndToken += 1;
-
-                return result;
-            }
-
-            return AnalyzeResult.Success;
+            return new NestedCondition(AnalyzeInternal(expression.Expressions[0], expression, depth));
         }
         #endregion
 
         #region InExpression
-        private AnalyzeResult AnalyzeInExpression(InExpression expression, IExpression parent, in int depth)
+        private ICondition AnalyzeInExpression(InExpression expression, IExpression parent, in int depth)
         {
-            AnalyzeInternal(expression.Target, expression, depth + 1);
-            Context.Append("IN");
-            AnalyzeInternal(expression.Sources, expression, depth + 1);
+            var leftCondition = AnalyzeInternal(expression.Target, expression, depth + 1);
+            var rightCondition = AnalyzeInternal(expression.Sources, expression, depth + 1);
 
-            return AnalyzeResult.Success;
+            return new OperatorCondition(leftCondition, "IN", rightCondition);
         }
         #endregion
 
         #region LogicalExpression
-        private AnalyzeResult AnalyzeLogicalExpression(LogicalExpression expression, IExpression parent, int depth)
+        private ICondition AnalyzeLogicalExpression(LogicalExpression expression, IExpression parent, int depth)
         {
             var left = expression.Left;
             var right = expression.Right;
             var @operator = expression.Operator;
-            
+
             // check hash key or sort key
             if (depth == 0 && IsColumnAndLiteralExpression(left, right, out var target, out var value))
             {
-                if (AnalyzeHashKey(target, value, @operator, out var hashKey))
-                    return new AnalyzeResult(hashKey);
+                if (AnalyzeHashKey(target, value, @operator, out var hashKeyCondition))
+                    return hashKeyCondition;
 
-                if (AnalyzeSortKey(target, value, @operator, out var sortKey))
-                    return new AnalyzeResult(sortKey);
+                if (AnalyzeSortKey(target, value, @operator, out var sortKeyCondition))
+                    return sortKeyCondition;
             }
 
             switch (@operator.ToLower())
             {
                 case "is":
-                    return AnalyzeIsNullExpression(expression, parent, depth); 
+                    return AnalyzeIsNullExpression(expression, parent, depth);
             }
-            
-            // left
-            var leftResult = AnalyzeInternal(left, expression, depth);
 
-            if (IsHashOrSortKey(leftResult) && @operator.Equals("AND", StringComparison.OrdinalIgnoreCase))
-                leftResult.Key.EndToken = Context.BufferIndex + 1;
-            else
-                Context.RemoveKey(leftResult.Key);
+            var leftCondition = AnalyzeInternal(left, expression, depth);
+            var rightCondition = AnalyzeInternal(right, expression, depth);
 
-            // operator
-            Context.Append(@operator);
- 
-            // right
-            var rightResult = AnalyzeInternal(right, expression, depth);
+            if (!(GetPrimaryKeyFromCondition(leftCondition, out var leftKey) && @operator.EqualsIgnore("AND")))
+                Context.RemoveKey(leftKey);
 
-            if (IsHashOrSortKey(rightResult) && @operator.Equals("AND", StringComparison.OrdinalIgnoreCase))
-                rightResult.Key.StartToken = Context.BufferIndex - 1;
-            else
-                Context.RemoveKey(rightResult.Key);
+            if (!(GetPrimaryKeyFromCondition(rightCondition, out var rightKey) && @operator.EqualsIgnore("AND")))
+                Context.RemoveKey(rightKey);
 
-            return AnalyzeResult.Success;
+            return new OperatorCondition(leftCondition, @operator, rightCondition);
         }
 
         // EXPR IS (NOT) NULL
-        private AnalyzeResult AnalyzeIsNullExpression(LogicalExpression expression, IExpression parent, int depth)
+        private ICondition AnalyzeIsNullExpression(LogicalExpression expression, IExpression _, int depth)
         {
             var left = expression.Left;
             var right = expression.Right;
-            var @operator = expression.Operator;
 
-            if (right is UnaryExpression unaryExpression && unaryExpression.Operator.Equals("not", StringComparison.OrdinalIgnoreCase))
-            {
+            if (right is UnaryExpression unaryExpression && unaryExpression.Operator.EqualsIgnore("not"))
                 right = unaryExpression.Expression;
-            }
-            
-            AnalyzeInternal(left, expression, depth);
-            Context.Append("=");
-            AnalyzeInternal(right, expression, depth);
-            
-            return AnalyzeResult.Success;
+
+            return new OperatorCondition(AnalyzeInternal(left, expression, depth), "=", AnalyzeInternal(right, expression, depth));
         }
         #endregion
-        
+
         #region LiteralExpression
-        private AnalyzeResult AnalyzeLiteralExpression(LiteralExpression expression, IExpression parent, int depth)
+        private StringCondition AnalyzeLiteralExpression(LiteralExpression expression, IExpression parent, int _)
         {
             if (parent == null)
                 throw new InvalidOperationException("Literal value cannot be used alone.");
 
             var valueName = Context.GetAttributeValue(expression.Value.ToAttributeValue());
-            Context.Append(valueName.Key);
 
-            return AnalyzeResult.Success;
+            return new StringCondition(valueName.Key);
         }
         #endregion
-        
+
         #region ColumnExpression
-        private AnalyzeResult AnalyzeColumnExpression(MemberExpression expression, IExpression parent, int depth)
+        private StringCondition AnalyzeColumnExpression(MemberExpression expression, IExpression parent, int depth)
         {
             if (parent == null)
                 throw new InvalidOperationException("Literal value cannot be used alone.");
 
-            Context.Append(string.Join(".", expression.Name));
-            
-            return AnalyzeResult.Success;
+            return new StringCondition(string.Join(".", expression.Name));
         }
         #endregion
-        
+
         #region Analyze HashKey / SortKey
-        private bool AnalyzeHashKey(MemberExpression target, LiteralExpression value, string @operator, out HashKey hashKey)
+        private bool AnalyzeHashKey(MemberExpression target, LiteralExpression value, string @operator, out HashKeyCondition hashKeyCondition)
         {
-            hashKey = null;
+            hashKeyCondition = null;
 
             if (@operator != "=" || target.Name.Length > 1)
                 return false;
@@ -200,19 +156,15 @@ namespace PrimarSql.Data.Expressions.Generators
 
             Context.Enter(attrName);
             Context.Enter(attrValue);
-            
-            hashKey = Context.AddHashKey(attrName, attrValue);
 
-            Context.Append($"{attrName.Key} = {attrValue.Key}");
-            hashKey.StartToken = Context.BufferIndex;
-            hashKey.EndToken = Context.BufferIndex;
+            hashKeyCondition = Context.AddHashKeyCondition(attrName, attrValue);
 
             return true;
         }
 
-        private bool AnalyzeSortKey(MemberExpression target, LiteralExpression value, string @operator, out SortKey sortKey)
+        private bool AnalyzeSortKey(MemberExpression target, LiteralExpression value, string @operator, out SortKeyCondition sortKeyCondition)
         {
-            sortKey = null;
+            sortKeyCondition = null;
 
             if (target.Name.Length > 1 || !IsValidSortKeyOperator(@operator))
                 return false;
@@ -228,11 +180,7 @@ namespace PrimarSql.Data.Expressions.Generators
             Context.Enter(attrName);
             Context.Enter(attrValue);
 
-            sortKey = Context.AddSortKey(attrName, attrValue, null, @operator, SortKeyType.Comparison);
-
-            Context.Append($"{attrName} {@operator} {attrValue}");
-            sortKey.StartToken = Context.BufferIndex;
-            sortKey.EndToken = Context.BufferIndex;
+            sortKeyCondition = Context.AddSortKeyCondition(attrName, attrValue, null, @operator, SortKeyType.Comparison);
             
             return true;
         }
@@ -261,9 +209,22 @@ namespace PrimarSql.Data.Expressions.Generators
             return false;
         }
 
-        private bool IsHashOrSortKey(AnalyzeResult result)
+        private bool GetPrimaryKeyFromCondition(ICondition condition, out IKey key)
         {
-            return result.State == AnalyzeState.HashKey || result.State == AnalyzeState.SortKey;
+            switch (condition)
+            {
+                case HashKeyCondition hashKeyCondition:
+                    key = hashKeyCondition.HashKey;
+                    return true;
+
+                case SortKeyCondition sortKeyCondition:
+                    key = sortKeyCondition.SortKey;
+                    return true;
+
+                default:
+                    key = null;
+                    return false;
+            }
         }
 
         private bool IsValidSortKeyOperator(string @operator)

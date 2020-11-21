@@ -2,7 +2,7 @@
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Models;
-using PrimarSql.Data.Models.ExpressionBuffers;
+using PrimarSql.Data.Models.Conditions;
 
 namespace PrimarSql.Data.Expressions.Generators
 {
@@ -17,34 +17,22 @@ namespace PrimarSql.Data.Expressions.Generators
             private readonly Dictionary<ExpressionAttributeValue, int> _attributeValues;
 
             public ExpressionAttributeName[] AttributeNames => _attributeNames.Select(i => i.Key).ToArray();
-            
+
             public ExpressionAttributeValue[] AttributeValues => _attributeValues.Select(i => i.Key).ToArray();
 
-            public List<HashKey> HashKeys { get; } = new List<HashKey>();
+            public Dictionary<HashKey, HashKeyCondition> HashKeys { get; } = new Dictionary<HashKey, HashKeyCondition>();
 
-            public List<SortKey> SortKeys { get; } = new List<SortKey>();
-            
-            public List<IBuffer> Buffers { get; }
-
-            public int BufferIndex => Buffers.Count - 1;
+            public Dictionary<SortKey, SortKeyCondition> SortKeys { get; } = new Dictionary<SortKey, SortKeyCondition>();
 
             internal GeneratorContext()
             {
                 _attributeNames = new Dictionary<ExpressionAttributeName, int>();
                 _attributeValues = new Dictionary<ExpressionAttributeValue, int>();
-                Buffers = new List<IBuffer>();
-            }
-
-            public int Append(string expression)
-            {
-                Buffers.Add(new StringBuffer(expression));
-
-                return Buffers.Count - 1;
             }
 
             public bool RemoveKey(IKey key)
             {
-                if (key is HashKey hashKey && HashKeys.Contains(hashKey))
+                if (key is HashKey hashKey && HashKeys.ContainsKey(hashKey))
                 {
                     Leave(hashKey.ExpressionAttributeName);
                     Leave(hashKey.ExpressionAttributeValue);
@@ -52,7 +40,7 @@ namespace PrimarSql.Data.Expressions.Generators
                     return HashKeys.Remove(hashKey);
                 }
 
-                if (key is SortKey sortKey && SortKeys.Contains(sortKey))
+                if (key is SortKey sortKey && SortKeys.ContainsKey(sortKey))
                 {
                     Leave(sortKey.ExpressionAttributeName);
                     Leave(sortKey.ExpressionAttributeValue);
@@ -64,17 +52,7 @@ namespace PrimarSql.Data.Expressions.Generators
                 return false;
             }
 
-            public void RemoveLastToken()
-            {
-                Buffers.RemoveAt(Buffers.Count - 1);
-            }
-
-            public string Flush()
-            {
-                return string.Join(" ", Buffers);
-            }
-
-            public HashKey AddHashKey(ExpressionAttributeName attrName, ExpressionAttributeValue attrValue)
+            public HashKeyCondition AddHashKeyCondition(ExpressionAttributeName attrName, ExpressionAttributeValue attrValue)
             {
                 var hashKey = new HashKey
                 {
@@ -82,12 +60,13 @@ namespace PrimarSql.Data.Expressions.Generators
                     ExpressionAttributeValue = attrValue,
                 };
 
-                HashKeys.Add(hashKey);
+                var hashKeyCondition = new HashKeyCondition(hashKey);
+                HashKeys.Add(hashKey, hashKeyCondition);
 
-                return hashKey;
+                return hashKeyCondition;
             }
 
-            public SortKey AddSortKey(
+            public SortKeyCondition AddSortKeyCondition(
                 ExpressionAttributeName name,
                 ExpressionAttributeValue value,
                 ExpressionAttributeValue value2,
@@ -104,9 +83,10 @@ namespace PrimarSql.Data.Expressions.Generators
                     SortKeyType = sortKeyType
                 };
 
-                SortKeys.Add(sortKey);
+                var sortKeyCondition = new SortKeyCondition(sortKey);
+                SortKeys.Add(sortKey, sortKeyCondition);
 
-                return sortKey;
+                return sortKeyCondition;
             }
 
             public ExpressionAttributeName GetAttributeName(string rawColumnName)
