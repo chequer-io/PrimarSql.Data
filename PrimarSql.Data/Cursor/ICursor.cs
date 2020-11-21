@@ -1,11 +1,14 @@
 using System;
 using System.Data;
+using PrimarSql.Data.Processors;
 
 namespace PrimarSql.Data.Cursor
 {
     // TODO: internal
     public interface ICursor : IDisposable
     {
+        IProcessor Processor { get; set; }
+        
         bool IsClosed { get; }
         
         bool HasRows { get; }

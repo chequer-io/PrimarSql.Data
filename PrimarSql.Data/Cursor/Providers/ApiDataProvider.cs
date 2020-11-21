@@ -59,7 +59,7 @@ namespace PrimarSql.Data.Cursor.Providers
 
             var sortKeyExists = !string.IsNullOrEmpty(generator.SortKeyName);
 
-            // HashKey Only
+            // Hash key only in this index
             if (!sortKeyExists)
             {
                 // If HashKey not found in where expr
@@ -77,14 +77,14 @@ namespace PrimarSql.Data.Cursor.Providers
             else
             {
                 // If HashKey or SortKey not found in where expr
-                if (generateResult.HashKey == null ||
+                if (generateResult.HashKey == null &&
                     generateResult.SortKey == null)
                     _requester = new ScanRequester();
                 else
                 {
                     if (string.IsNullOrEmpty(IndexName) &&
                         string.IsNullOrWhiteSpace(generateResult.FilterExpression) &&
-                        generateResult.SortKey.Operator == "=")
+                        generateResult.SortKey?.Operator == "=")
                         _requester = new GetItemRequester();
                     else
                     {
@@ -101,6 +101,7 @@ namespace PrimarSql.Data.Cursor.Providers
                 generateResult.HashKey,
                 generateResult.SortKey,
                 TableName,
+                IndexName,
                 generateResult.FilterExpression
             );
         }

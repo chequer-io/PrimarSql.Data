@@ -3,12 +3,15 @@ using System.Data;
 using System.Linq;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
+using PrimarSql.Data.Processors;
 
 namespace PrimarSql.Data.Cursor
 {
     public abstract class DataCursor : ICursor
     {
         protected DataCell[] CurrentRow { get; set; }
+
+        public IProcessor Processor { get; set; }
 
         public abstract bool IsClosed { get; }
 

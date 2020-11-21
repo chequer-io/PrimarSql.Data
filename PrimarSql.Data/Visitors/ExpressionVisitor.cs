@@ -243,7 +243,7 @@ namespace PrimarSql.Data.Visitors
                 case StringLiteralConstantContext stringLiteralConstantContext:
                     return new LiteralExpression
                     {
-                        Value = stringLiteralConstantContext.stringLiteral().GetText(),
+                        Value = IdentifierUtility.Unescape(stringLiteralConstantContext.stringLiteral().GetText()),
                         ValueType = LiteralValueType.String
                     };
 

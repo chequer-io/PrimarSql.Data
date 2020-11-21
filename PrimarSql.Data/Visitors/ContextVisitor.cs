@@ -121,7 +121,7 @@ namespace PrimarSql.Data.Visitors
             {
                 var limitClause = context.limitClause();
 
-                if (long.TryParse(limitClause.limit.GetText(), out long limit))
+                if (int.TryParse(limitClause.limit.GetText(), out int limit))
                     queryInfo.Limit = limit;
             }
 
@@ -129,7 +129,7 @@ namespace PrimarSql.Data.Visitors
             {
                 var offsetClause = context.offsetClause();
 
-                if (long.TryParse(offsetClause.offset.GetText(), out long offset))
+                if (int.TryParse(offsetClause.offset.GetText(), out int offset))
                     queryInfo.Offset = offset;
             }
 

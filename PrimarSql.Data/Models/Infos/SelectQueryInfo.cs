@@ -12,9 +12,9 @@ namespace PrimarSql.Data.Models
         
         public bool UseStronglyConsistent { get; set; } = false;
 
-        public long Limit { get; set; } = -1;
+        public int Limit { get; set; } = -1;
 
-        public long Offset { get; set; } = -1;
+        public int Offset { get; set; } = -1;
 
         public bool OrderDescend { get; set; } = false;
         
