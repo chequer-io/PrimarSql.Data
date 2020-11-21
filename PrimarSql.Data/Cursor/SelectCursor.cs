@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Cursor.Providers;
+using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Sources;
@@ -32,7 +33,7 @@ namespace PrimarSql.Data.Cursor
 
             DataProvider = QueryInfo.TableSource switch
             {
-                AtomTableSource _ => new TableDataProvider(Context, QueryInfo),
+                AtomTableSource _ => new ApiDataProvider(Context, QueryInfo),
                 SubquerySource _ => new SubqueryDataProvider(Context, QueryInfo),
                 _ => DataProvider
             };

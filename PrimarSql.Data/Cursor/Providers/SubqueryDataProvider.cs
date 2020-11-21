@@ -18,7 +18,7 @@ namespace PrimarSql.Data.Cursor.Providers
             if (!(queryInfo.TableSource is SubquerySource subquerySource))
                 throw new InvalidOperationException($"SubqueryDataProvider cannot handle {queryInfo.TableSource?.GetType().Name}");
 
-            InnerDataProvider = new TableDataProvider(context, subquerySource.SubqueryInfo);
+            InnerDataProvider = new ApiDataProvider(context, subquerySource.SubqueryInfo);
         }
 
         public DataTable GetSchemaTable()
