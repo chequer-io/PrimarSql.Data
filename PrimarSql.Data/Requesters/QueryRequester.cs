@@ -1,17 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Amazon.DynamoDBv2;
+﻿using System.Linq;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Requesters
 {
-    public class QueryRequester : BaseRequester
+    public class QueryRequester : MultiValueRequester<QueryRequest>
     {
-        private int _remainSkip = 0;
-        private List<Dictionary<string, AttributeValue>> _items;
-        private int _index = 0;
-        private Dictionary<string, AttributeValue> _exclusiveStartKey;
-        
         protected override void Initialize()
         {
             if (QueryInfo.Limit == 0)
@@ -20,34 +14,13 @@ namespace PrimarSql.Data.Requesters
                 return;
             }
 
-            if (QueryInfo.Limit != -1)
-                _remainSkip = QueryInfo.Limit;
+            if (QueryInfo.Offset != -1)
+                RemainedSkipCount = QueryInfo.Offset;
         }
 
-        public override bool Next()
+        protected override QueryRequest GetRequest()
         {
-            if (_remainSkip != 0 && !SkipOffset())
-                return false;
-
-            if (_items == null || _items.Count <= _index)
-            {
-                if (!Fetch())
-                    return false;
-
-                _index = 0;
-            }
-            
-            Current = _items[_index++];
-
-            return true;
-        }
-
-        private bool Fetch()
-        {
-            if (!HasRows)
-                return false;
-            
-            var queryRequest = new QueryRequest
+            var request = new QueryRequest
             {
                 TableName = TableName,
                 ExpressionAttributeNames = ExpressionAttributeNames.ToDictionary(kv => kv.Key, kv => kv.Value),
@@ -55,51 +28,38 @@ namespace PrimarSql.Data.Requesters
                 ScanIndexForward = !QueryInfo.OrderDescend,
                 FilterExpression = string.IsNullOrWhiteSpace(FilterExpression) ? null : FilterExpression.Trim(),
                 KeyConditionExpression = HashKey + (SortKey != null ? " AND " + SortKey : string.Empty),
-                ExclusiveStartKey = _exclusiveStartKey,
+                ExclusiveStartKey = ExclusiveStartKey,
             };
 
             if (!string.IsNullOrEmpty(IndexName))
-                queryRequest.IndexName = IndexName;
+                request.IndexName = IndexName;
 
-            var queryResult = Client.QueryAsync(queryRequest).Result;
-            _items = queryResult.Items;
-
-            if (queryResult.LastEvaluatedKey.Count == 0)
-                HasRows = false;
-            
-            return _items.Count != 0;
+            return request;
         }
-        
-        private bool SkipOffset()
+
+        protected override QueryRequest GetSkipRequest(QueryRequest request)
         {
-            Dictionary<string, AttributeValue> exclusiveStartKey = null;
+            request.Limit = RemainedSkipCount;
+            return request;
+        }
 
-            while (_remainSkip == 0)
+        protected override QueryRequest GetFetchRequest(QueryRequest request)
+        {
+            if (RemainedCount != -1)
+                request.Limit = RemainedCount;
+
+            return request;
+        }
+
+        protected override RequestResponseData GetResponse(QueryRequest request)
+        {
+            var response = Client.QueryAsync(request).Result;
+
+            return new RequestResponseData
             {
-                var request = new QueryRequest
-                {
-                    Limit = _remainSkip,
-                    TableName = TableName,
-                    IndexName = IndexName,
-                    ExpressionAttributeNames = ExpressionAttributeNames.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    ExpressionAttributeValues = ExpressionAttributeValues.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    ScanIndexForward = !QueryInfo.OrderDescend,
-                    Select = Select.COUNT
-                };
-
-                if (exclusiveStartKey != null)
-                    request.ExclusiveStartKey = exclusiveStartKey;
-
-                var queryResponse = Client.QueryAsync(request).Result;
-                exclusiveStartKey = queryResponse.LastEvaluatedKey;
-
-                if (exclusiveStartKey == null)
-                    return false;
-
-                _remainSkip -= queryResponse.Count;
-            }
-
-            return true;
+                Items = response.Items,
+                ExclusiveStartKey = response.LastEvaluatedKey
+            };
         }
     }
 }
