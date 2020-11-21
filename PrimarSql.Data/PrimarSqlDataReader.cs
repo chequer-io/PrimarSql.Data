@@ -23,7 +23,7 @@ namespace PrimarSql.Data
         {
             _cursor = cursor;
         }
-        
+
         public override object this[int ordinal] => _cursor[ordinal];
 
         public override object this[string name] => _cursor[name];
@@ -142,7 +142,7 @@ namespace PrimarSql.Data
         }
 
         public override bool Read() => _cursor.Read();
-        
+
         public override bool IsDBNull(int ordinal)
         {
             // TODO: Implement
