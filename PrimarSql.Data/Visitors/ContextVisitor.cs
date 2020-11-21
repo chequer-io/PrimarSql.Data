@@ -7,34 +7,33 @@ using PrimarSql.Data.Utilities;
 using static PrimarSql.Internal.PrimarSqlParser;
 using static PrimarSql.Data.Utilities.Validator;
 
-namespace PrimarSql.Data.Processors
+namespace PrimarSql.Data.Visitors
 {
     // TODO: internal
-    public class ContextProcessor
+    public static class ContextVisitor
     {
-        public QueryPlanner Process(RootContext context)
+        public static QueryPlanner Visit(RootContext context)
         {
-            var statement = context
-                .sqlStatements()
-                .sqlStatement(0);
+            return VisitSqlStatement(context.sqlStatement());
+        }
 
-            if (statement == null || statement.children.Count == 0)
-                return null;
+        public static QueryPlanner VisitSqlStatement(SqlStatementContext context)
+        {
+            if (context.dmlStatement() != null)
+                return VisitDmlStatementContext(context.dmlStatement());
 
-            switch (statement.children[0])
-            {
-                case DmlStatementContext dmlStatementContext:
-                    return ProcessDmlStatementContext(dmlStatementContext);
+            if (context.ddlStatement() != null)
+                return VisitDdlStatementContext(context.ddlStatement());
 
-                case DdlStatementContext ddlStatementContext:
-                    return ProcessDdlStatementContext(ddlStatementContext);
-            }
+            // describe
+
+            // show
 
             return null;
         }
 
         #region DML Statement
-        public QueryPlanner ProcessDmlStatementContext(DmlStatementContext context)
+        public static QueryPlanner VisitDmlStatementContext(DmlStatementContext context)
         {
             if (context.children.Count == 0)
                 return null;
@@ -42,7 +41,7 @@ namespace PrimarSql.Data.Processors
             switch (context.children[0])
             {
                 case SelectStatementContext selectStatementContext:
-                    return ProcessSelectStatementContext(selectStatementContext);
+                    return new SelectQueryPlanner(VisitSelectStatement(selectStatementContext));;
 
                 case InsertStatementContext insertStatementContext:
 
@@ -59,28 +58,35 @@ namespace PrimarSql.Data.Processors
             return null;
         }
 
-        public SelectQueryPlanner ProcessSelectStatementContext(SelectStatementContext context)
+        public static SelectQueryInfo VisitSelectStatement(SelectStatementContext context)
         {
             switch (context)
             {
                 case SimpleSelectContext simpleSelectContext:
-                    return ProcessSimpleSelectContext(simpleSelectContext);
+                    return VisitSimpleSelectContext(simpleSelectContext);
 
                 case ParenthesisSelectContext parenthesisSelectContext:
-                    break;
+                    return VisitQueryExpression(parenthesisSelectContext.queryExpression());
             }
 
             return null;
         }
 
-        public SelectQueryPlanner ProcessSimpleSelectContext(SimpleSelectContext context)
+        public static SelectQueryInfo VisitQueryExpression(QueryExpressionContext context)
         {
-            return ProcessQuerySpecification(context.querySpecification());
+            if (context.queryExpression() != null)
+                return VisitQueryExpression(context.queryExpression());
+
+            return VisitQuerySpecification(context.querySpecification());
         }
 
-        public SelectQueryPlanner ProcessQuerySpecification(QuerySpecificationContext context)
+        public static SelectQueryInfo VisitSimpleSelectContext(SimpleSelectContext context)
         {
-            var planner = new SelectQueryPlanner();
+            return VisitQuerySpecification(context.querySpecification());
+        }
+
+        public static SelectQueryInfo VisitQuerySpecification(QuerySpecificationContext context)
+        {
             var queryInfo = new SelectQueryInfo();
 
             var fromClause = context.fromClause();
@@ -91,7 +97,7 @@ namespace PrimarSql.Data.Processors
                     queryInfo.UseStronglyConsistent = true;
             }
 
-            queryInfo.Columns = ProcessSelectElements(context.selectElements());
+            queryInfo.Columns = VisitSelectElements(context.selectElements());
 
             if (fromClause == null)
             {
@@ -99,12 +105,10 @@ namespace PrimarSql.Data.Processors
             }
             else
             {
-                queryInfo.TableSource = ProcessTableSource(fromClause.tableSource());
+                queryInfo.TableSource = VisitTableSource(fromClause.tableSource());
 
                 if (fromClause.whereExpr != null)
-                {
-                    var whereExpr = fromClause.whereExpr;
-                }
+                    queryInfo.WhereExpression = ExpressionVisitor.VisitExpression(fromClause.whereExpr);
             }
 
             if (context.orderClause() != null)
@@ -129,12 +133,22 @@ namespace PrimarSql.Data.Processors
                     queryInfo.Offset = offset;
             }
 
-            planner.QueryInfo = queryInfo;
+            if (context.startKeyClause() != null)
+            {
+                var startKeyClause = context.startKeyClause();
 
-            return planner;
+                queryInfo.StartHashKey = ExpressionVisitor.VisitConstant(startKeyClause.hashKey);
+
+                if (startKeyClause.sortKey != null)
+                {
+                    queryInfo.StartSortKey = ExpressionVisitor.VisitConstant(startKeyClause.sortKey);
+                }
+            }
+
+            return queryInfo;
         }
 
-        public IColumn[] ProcessSelectElements(SelectElementsContext context)
+        public static IColumn[] VisitSelectElements(SelectElementsContext context)
         {
             return new IColumn[]
             {
@@ -142,31 +156,39 @@ namespace PrimarSql.Data.Processors
             };
         }
 
-        public ITableSource ProcessTableSource(TableSourceContext context)
+        public static ITableSource VisitTableSource(TableSourceContext context)
         {
             switch (context)
             {
                 case TableSourceBaseContext tableSourceBaseContext:
-                    return ProcessTableSourceBase(tableSourceBaseContext.tableSourceItem());
+                    return VisitTableSourceBase(tableSourceBaseContext.tableSourceItem());
 
                 case TableSourceNestedContext tableSourceNestedContext:
-                    return ProcessTableSourceBase(tableSourceNestedContext.tableSourceItem());
+                    return VisitTableSourceBase(tableSourceNestedContext.tableSourceItem());
             }
 
             return null;
         }
 
-        public ITableSource ProcessTableSourceBase(TableSourceItemContext context)
+        public static ITableSource VisitTableSourceBase(TableSourceItemContext context)
         {
             switch (context)
             {
                 case AtomTableItemContext atomTableItemContext:
-                    return new AtomTableSource(IdentifierUtility.Parse(atomTableItemContext.tableName().GetText())[0]);
+                {
+                    string[] identifiers = IdentifierUtility.Parse(atomTableItemContext.tableName().GetText());
+                    ValidateTableWithIndexName(identifiers);
+
+                    return new AtomTableSource(
+                        identifiers[0],
+                        identifiers.Length == 2 ? identifiers[1] : string.Empty
+                    );
+                }
 
                 case SubqueryTableItemContext subqueryTableItemContext:
                     return new SubquerySource
                     {
-                        SubqueryInfo = ProcessSelectStatementContext(subqueryTableItemContext.parenthesisSubquery).QueryInfo
+                        SubqueryInfo = VisitSelectStatement(subqueryTableItemContext.parenthesisSubquery)
                     };
             }
 
@@ -174,7 +196,7 @@ namespace PrimarSql.Data.Processors
         }
         #endregion
 
-        public QueryPlanner ProcessDdlStatementContext(DdlStatementContext context)
+        public static QueryPlanner VisitDdlStatementContext(DdlStatementContext context)
         {
             if (context.children.Count == 0)
                 return null;
@@ -197,13 +219,13 @@ namespace PrimarSql.Data.Processors
                     break;
 
                 case DropTableContext dropTableContext:
-                    return ProcessDropTableContext(dropTableContext);
+                    return VisitDropTableContext(dropTableContext);
             }
 
             return null;
         }
 
-        public DropTablePlanner ProcessDropTableContext(DropTableContext context)
+        public static DropTablePlanner VisitDropTableContext(DropTableContext context)
         {
             var dropTablePlanner = new DropTablePlanner
             {

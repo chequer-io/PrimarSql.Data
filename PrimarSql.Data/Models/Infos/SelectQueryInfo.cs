@@ -1,4 +1,5 @@
-﻿using PrimarSql.Data.Models.Columns;
+﻿using PrimarSql.Data.Expressions;
+using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Sources;
 
 namespace PrimarSql.Data.Models
@@ -11,10 +12,18 @@ namespace PrimarSql.Data.Models
         
         public bool UseStronglyConsistent { get; set; } = false;
 
-        public long Limit { get; set; }
+        public long Limit { get; set; } = -1;
 
-        public long Offset { get; set; }
+        public long Offset { get; set; } = -1;
 
         public bool OrderDescend { get; set; } = false;
+        
+        public LiteralExpression StartHashKey { get; set; }
+        
+        public LiteralExpression StartSortKey { get; set; }
+
+        public bool HasStartKey => StartHashKey != null;
+        
+        public IExpression WhereExpression { get; set; }
     }
 }

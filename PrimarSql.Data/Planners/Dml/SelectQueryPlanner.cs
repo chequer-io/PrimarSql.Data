@@ -8,6 +8,11 @@ namespace PrimarSql.Data.Planners
     {
         public SelectQueryInfo QueryInfo { get; set; }
 
+        public SelectQueryPlanner(SelectQueryInfo queryInfo)
+        {
+            QueryInfo = queryInfo;
+        }
+        
         public override DbDataReader Execute()
         {
             return new PrimarSqlDataReader(
