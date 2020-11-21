@@ -41,7 +41,7 @@ namespace PrimarSql.Data.Cursor
 
         public override DataTable GetSchemaTable()
         {
-            throw new NotImplementedException();
+            return DataProvider.GetSchemaTable();
         }
 
         public override bool Read()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Expressions.Generators;
@@ -15,6 +16,8 @@ namespace PrimarSql.Data.Cursor.Providers
     {
         private readonly TableDescription _tableDescription;
         private IRequester _requester;
+        private DataTable _dataTable;
+        private List<string> _columns = new List<string>();
 
         public QueryContext Context { get; }
 
@@ -34,13 +37,20 @@ namespace PrimarSql.Data.Cursor.Providers
         {
             Context = context;
             QueryInfo = queryInfo;
+
+            _dataTable = new DataTable();
+            _dataTable.Columns.Add(SchemaTableColumn.ColumnName, typeof(string));
+            _dataTable.Columns.Add(SchemaTableColumn.ColumnOrdinal, typeof(int));
+            _dataTable.Columns.Add(SchemaTableColumn.DataType, typeof(Type));
+            _dataTable.Columns.Add(SchemaTableOptionalColumn.IsReadOnly, typeof(bool));
+
             _tableDescription = context.GetTableDescription(TableName);
             SetRequester();
         }
 
         public DataTable GetSchemaTable()
         {
-            return null;
+            return _dataTable;
         }
 
         public bool Next()
@@ -112,6 +122,12 @@ namespace PrimarSql.Data.Cursor.Providers
             {
                 var value = c.Value.ToValue();
                 var dataType = value.GetType();
+
+                if (!_columns.Contains(c.Key))
+                {
+                    _columns.Add(c.Key);
+                    _dataTable.Rows.Add(c.Key, _columns.Count - 1, dataType, false);
+                }
 
                 return new DataCell
                 {

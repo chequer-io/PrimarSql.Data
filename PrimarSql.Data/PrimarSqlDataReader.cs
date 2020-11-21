@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Data;
 using System.Data.Common;
 using PrimarSql.Data.Cursor;
 
@@ -28,6 +29,11 @@ namespace PrimarSql.Data
 
         public override object this[string name] => _cursor[name];
 
+        public override DataTable GetSchemaTable()
+        {
+            return _cursor.GetSchemaTable();
+        }
+        
         public override string GetName(int ordinal)
         {
             return _cursor.Getname(ordinal);
@@ -145,8 +151,7 @@ namespace PrimarSql.Data
 
         public override bool IsDBNull(int ordinal)
         {
-            // TODO: Implement
-            return false;
+            return GetValue(ordinal) == DBNull.Value;
         }
 
         internal class PrimarSqlEnumerator : IEnumerator
