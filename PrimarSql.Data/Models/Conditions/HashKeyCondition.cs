@@ -5,8 +5,8 @@ namespace PrimarSql.Data.Models.Conditions
     public class HashKeyCondition : ICondition
     {
         public HashKey HashKey { get; }
-        
-        public bool IsActivated { get; set; }
+
+        public bool IsActivated { get; set; } = true;
 
         public string ToExpression(AttributeValueManager valueManager)
         {

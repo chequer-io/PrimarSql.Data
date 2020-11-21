@@ -5,8 +5,8 @@ namespace PrimarSql.Data.Models.Conditions
     public class SortKeyCondition : ICondition
     {
         public SortKey SortKey { get; }
-        
-        public bool IsActivated { get; set; }
+
+        public bool IsActivated { get; set; } = true;
 
         public SortKeyCondition(SortKey sortKey)
         {
