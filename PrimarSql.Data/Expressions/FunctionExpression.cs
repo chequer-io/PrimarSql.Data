@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Expressions
 {
-    public class FunctionExpression : IExpression
+    internal sealed class FunctionExpression : IExpression
     {
         public IExpression Member { get; set; }
         

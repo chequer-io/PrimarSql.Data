@@ -4,7 +4,7 @@ using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Requesters
 {
-    public class QueryRequester : MultiValueRequester<QueryRequest>
+    internal sealed class QueryRequester : MultiValueRequester<QueryRequest>
     {
         protected override void Initialize()
         {

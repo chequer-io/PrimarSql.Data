@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 
 namespace PrimarSql.Data.Processors
 {
-    public abstract class BaseProcessor : IProcessor
+    internal abstract class BaseProcessor : IProcessor
     {
         public abstract DataTable GetSchemaTable();
 

@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace PrimarSql.Data.Processors
 {
-    public interface IProcessor
+    internal interface IProcessor
     {
         DataTable GetSchemaTable();
 

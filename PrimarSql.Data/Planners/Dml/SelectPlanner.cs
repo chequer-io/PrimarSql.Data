@@ -4,7 +4,7 @@ using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Planners
 {
-    public class SelectQueryPlanner : QueryPlanner
+    internal sealed class SelectQueryPlanner : QueryPlanner
     {
         public SelectQueryInfo QueryInfo { get; set; }
 

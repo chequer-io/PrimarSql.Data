@@ -7,7 +7,7 @@ using PrimarSql.Data.Extensions;
 
 namespace PrimarSql.Data
 {
-    public class PrimarSqlConnection : DbConnection
+    public sealed class PrimarSqlConnection : DbConnection
     {
         #region Properties
         public override string Database => string.Empty;
@@ -30,7 +30,6 @@ namespace PrimarSql.Data
         #endregion
 
         #region Fields
-        private string _serverVersion;
         private ConnectionState _state = ConnectionState.Closed;
         private bool _isDisposed;
         #endregion
@@ -84,7 +83,6 @@ namespace PrimarSql.Data
         {
             try
             {
-                _serverVersion = null;
                 Client.Dispose();
                 _state = ConnectionState.Closed;
             }

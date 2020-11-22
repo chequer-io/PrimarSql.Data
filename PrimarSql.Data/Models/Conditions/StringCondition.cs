@@ -2,7 +2,7 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Models.Conditions
 {
-    public class StringCondition : ICondition
+    internal sealed class StringCondition : ICondition
     {
         public string Value { get; }
 

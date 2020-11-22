@@ -2,7 +2,7 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Models.Conditions
 {
-    public class NestedCondition : ICondition
+    internal sealed class NestedCondition : ICondition
     {
         public ICondition Condition { get; }
 

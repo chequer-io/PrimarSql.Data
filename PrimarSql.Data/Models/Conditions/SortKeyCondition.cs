@@ -2,7 +2,7 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Models.Conditions
 {
-    public class SortKeyCondition : ICondition
+    internal sealed class SortKeyCondition : ICondition
     {
         public SortKey SortKey { get; }
 

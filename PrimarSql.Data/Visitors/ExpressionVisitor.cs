@@ -7,7 +7,7 @@ using static PrimarSql.Internal.PrimarSqlParser;
 
 namespace PrimarSql.Data.Visitors
 {
-    public static class ExpressionVisitor
+    internal static class ExpressionVisitor
     {
         public static IExpression VisitExpression(ExpressionContext context)
         {
@@ -161,7 +161,7 @@ namespace PrimarSql.Data.Visitors
                     {
                         Member = new MemberExpression
                         {
-                            Name = new[] { "EXISTS" }
+                            Name = new object[] { "EXISTS" }
                         },
                         Parameters = new IExpression[]
                         {

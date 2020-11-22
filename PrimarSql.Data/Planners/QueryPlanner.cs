@@ -7,8 +7,7 @@ using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Planners
 {
-    // TODO: internal
-    public abstract class QueryPlanner
+    internal abstract class QueryPlanner
     {
         public QueryContext QueryContext { get; set; }
         

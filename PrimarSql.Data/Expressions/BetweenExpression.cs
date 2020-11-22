@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Expressions
 {
-    public class BetweenExpression : IExpression
+    internal sealed class BetweenExpression : IExpression
     {
         public IExpression Target { get; set; }
         

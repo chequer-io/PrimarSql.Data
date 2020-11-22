@@ -7,7 +7,7 @@ using PrimarSql.Data.Visitors;
 
 namespace PrimarSql.Data
 {
-    public class PrimarSqlCommand : DbCommand
+    public sealed class PrimarSqlCommand : DbCommand
     {
         #region Properties
         public override string CommandText { get; set; }

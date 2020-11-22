@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Models.Columns
 {
-    public interface IColumn
+    internal interface IColumn
     {
         
     }

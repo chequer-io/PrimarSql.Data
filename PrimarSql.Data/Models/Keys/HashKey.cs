@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Models
 {
-    public class HashKey : IKey
+    internal sealed class HashKey : IKey
     {
         public ExpressionAttributeName ExpressionAttributeName { get; set; }
 

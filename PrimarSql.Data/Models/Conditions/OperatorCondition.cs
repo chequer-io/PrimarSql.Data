@@ -4,7 +4,7 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Models.Conditions
 {
-    public class OperatorCondition : ICondition
+    internal sealed class OperatorCondition : ICondition
     {
         public ICondition Left { get; }
 

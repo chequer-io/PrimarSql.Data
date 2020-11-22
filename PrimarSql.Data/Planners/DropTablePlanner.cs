@@ -4,7 +4,7 @@ using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
 {
-    public class DropTablePlanner : QueryPlanner
+    internal sealed class DropTablePlanner : QueryPlanner
     {
         public string[] TargetTables { get; set; }
         

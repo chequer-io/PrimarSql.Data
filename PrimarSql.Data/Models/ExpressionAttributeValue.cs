@@ -2,7 +2,7 @@
 
 namespace PrimarSql.Data.Models
 {
-    public class ExpressionAttributeValue
+    internal sealed class ExpressionAttributeValue
     {
         public string Key { get; }
 

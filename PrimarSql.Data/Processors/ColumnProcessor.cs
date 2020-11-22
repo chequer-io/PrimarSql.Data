@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-using System.Text;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Models.Columns;
@@ -11,7 +10,7 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Processors
 {
-    public class ColumnProcessor : BaseProcessor
+    internal sealed class ColumnProcessor : BaseProcessor
     {
         private readonly DataTable _schemaTable;
 

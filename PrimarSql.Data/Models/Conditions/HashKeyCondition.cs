@@ -2,7 +2,7 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Models.Conditions
 {
-    public class HashKeyCondition : ICondition
+    internal sealed class HashKeyCondition : ICondition
     {
         public HashKey HashKey { get; }
 

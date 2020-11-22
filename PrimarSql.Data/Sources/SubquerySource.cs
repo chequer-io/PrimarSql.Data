@@ -2,7 +2,7 @@
 
 namespace PrimarSql.Data.Sources
 {
-    public class SubquerySource : ITableSource
+    internal sealed class SubquerySource : ITableSource
     {
         public SelectQueryInfo SubqueryInfo { get; set; }
     }

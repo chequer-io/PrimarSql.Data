@@ -5,7 +5,7 @@ using Amazon.DynamoDBv2.Model;
 
 namespace PrimarSql.Data.Models
 {
-    public sealed class QueryContext
+    internal sealed class QueryContext
     {
         private readonly Dictionary<string, TableDescription> _tableDescriptions = new Dictionary<string, TableDescription>();
         private AmazonDynamoDBClient _client;

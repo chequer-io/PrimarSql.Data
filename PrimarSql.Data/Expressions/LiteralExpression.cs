@@ -2,7 +2,7 @@
 
 namespace PrimarSql.Data.Expressions
 {
-    public class LiteralExpression : IExpression
+    internal sealed class LiteralExpression : IExpression
     {
         public object Value { get; set; }
         

@@ -20,7 +20,7 @@ namespace PrimarSql.Data
 
         public override int Depth => 0;
 
-        public PrimarSqlDataReader(IDataProvider dataProvider)
+        internal PrimarSqlDataReader(IDataProvider dataProvider)
         {
             _dataProvider = dataProvider;
         }
@@ -158,7 +158,7 @@ namespace PrimarSql.Data
             return GetValue(ordinal) == DBNull.Value;
         }
 
-        internal class PrimarSqlEnumerator : IEnumerator
+        internal sealed class PrimarSqlEnumerator : IEnumerator
         {
             public object Current => _dataReader._dataProvider.Current;
 

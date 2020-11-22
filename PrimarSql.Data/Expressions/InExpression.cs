@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Expressions
 {
-    public class InExpression : IExpression
+    internal sealed class InExpression : IExpression
     {
         public IExpression Target { get; set; }
         

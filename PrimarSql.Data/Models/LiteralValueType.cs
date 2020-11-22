@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Models
 {
-    public enum LiteralValueType
+    internal enum LiteralValueType
     {
         Boolean,
         Numeric,

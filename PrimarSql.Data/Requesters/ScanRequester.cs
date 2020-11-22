@@ -4,7 +4,7 @@ using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Requesters
 {
-    public class ScanRequester : MultiValueRequester<ScanRequest>
+    internal sealed class ScanRequester : MultiValueRequester<ScanRequest>
     {
         protected override void Initialize()
         {

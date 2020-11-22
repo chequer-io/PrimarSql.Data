@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Models
 {
-    public enum SortKeyType
+    internal enum SortKeyType
     {
         Comparison,
         Between,

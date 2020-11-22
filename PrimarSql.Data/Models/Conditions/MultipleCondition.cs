@@ -4,7 +4,7 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Models.Conditions
 {
-    public class MultipleCondition : ICondition
+    internal sealed class MultipleCondition : ICondition
     {
         public bool IsActivated => true;
 

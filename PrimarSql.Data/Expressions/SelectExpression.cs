@@ -2,7 +2,7 @@
 
 namespace PrimarSql.Data.Expressions
 {
-    public class SelectExpression : IExpression
+    internal sealed class SelectExpression : IExpression
     {
         public SelectQueryInfo SelectQueryInfo { get; set; }
     }

@@ -5,7 +5,7 @@ using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Requesters
 {
-    public abstract class BaseRequester : IRequester
+    internal abstract class BaseRequester : IRequester
     {
         public AmazonDynamoDBClient Client { get; private set; }
 

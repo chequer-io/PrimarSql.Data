@@ -2,7 +2,7 @@
 
 namespace PrimarSql.Data.Expressions.Generators
 {
-    public class ExpressionGenerateResult
+    internal sealed class ExpressionGenerateResult
     {
         public HashKey HashKey { get; set; }
         

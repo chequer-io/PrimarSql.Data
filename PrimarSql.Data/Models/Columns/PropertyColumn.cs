@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Models.Columns
 {
-    public class PropertyColumn : IColumn
+    internal sealed class PropertyColumn : IColumn
     {
         public object[] Name { get; set; }
         

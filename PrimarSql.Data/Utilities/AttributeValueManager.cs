@@ -4,7 +4,7 @@ using PrimarSql.Data.Extensions;
 
 namespace PrimarSql.Data.Utilities
 {
-    public sealed class AttributeValueManager
+    internal sealed class AttributeValueManager
     {
         private const string TrueLiteral = ":literal_true";
         private const string FalseLiteral = ":literal_false";

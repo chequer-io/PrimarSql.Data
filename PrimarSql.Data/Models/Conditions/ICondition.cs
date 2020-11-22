@@ -2,7 +2,7 @@
 
 namespace PrimarSql.Data.Models.Conditions
 {
-    public interface ICondition
+    internal interface ICondition
     {
         bool IsActivated { get; }
 

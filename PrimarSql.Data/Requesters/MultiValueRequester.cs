@@ -5,7 +5,7 @@ using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Requesters
 {
-    public abstract class MultiValueRequester<TRequest> : BaseRequester where TRequest : AmazonDynamoDBRequest
+    internal abstract class MultiValueRequester<TRequest> : BaseRequester where TRequest : AmazonDynamoDBRequest
     {
         private int _index = 0;
 

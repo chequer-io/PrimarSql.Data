@@ -3,7 +3,7 @@ using Amazon.DynamoDBv2.Model;
 
 namespace PrimarSql.Data.Models
 {
-    public class RequestResponseData
+    internal sealed class RequestResponseData
     {
         public List<Dictionary<string, AttributeValue>> Items { get; set; }
         

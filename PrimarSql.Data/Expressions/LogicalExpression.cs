@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Expressions
 {
-    public class LogicalExpression : IExpression
+    internal sealed class LogicalExpression : IExpression
     {
         public IExpression Left { get; set; }
         

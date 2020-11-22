@@ -8,8 +8,7 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Processors
 {
-    // Single Column (Document)
-    public class StarProcessor : BaseProcessor
+    internal sealed class StarProcessor : BaseProcessor
     {
         private DataTable _schemaTable;
 

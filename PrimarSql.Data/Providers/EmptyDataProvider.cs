@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 
 namespace PrimarSql.Data.Providers
 {
-    public class EmptyDataProvider : IDataProvider
+    internal sealed class EmptyDataProvider : IDataProvider
     {
         public JToken[] Current => null;
 

@@ -1,11 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Extensions;
 
 namespace PrimarSql.Data.Requesters
 {
-    public class GetItemRequester : BaseRequester
+    internal sealed class GetItemRequester : BaseRequester
     {
         protected override void Initialize()
         {

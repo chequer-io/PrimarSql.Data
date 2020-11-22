@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Models
 {
-    public interface IKey
+    internal interface IKey
     {
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Sources
 {
-    public class AtomTableSource : ITableSource
+    internal sealed class AtomTableSource : ITableSource
     {
         public string TableName { get; set; }
 

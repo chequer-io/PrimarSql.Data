@@ -5,7 +5,7 @@ using PrimarSql.Data.Extensions;
 
 namespace PrimarSql.Data.Utilities
 {
-    public static class IdentifierUtility
+    internal static class IdentifierUtility
     {
         private static readonly string[] _openParen = { "'", "\"", "`", "[", "$$" };
         private static readonly string[] _closeParen = { "'", "\"", "`", "]", "$$" };
@@ -182,7 +182,6 @@ namespace PrimarSql.Data.Utilities
             }
 
             Add();
-            // result.Add(escaped ? Unescape(buffer.ToString()) : buffer.ToString());
 
             return result.ToArray();
         }

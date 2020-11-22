@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Models
 {
-    public class ExpressionAttributeName
+    internal sealed class ExpressionAttributeName
     {
         public string Key { get; }
         

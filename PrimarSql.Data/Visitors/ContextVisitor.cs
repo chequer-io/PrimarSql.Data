@@ -6,12 +6,11 @@ using PrimarSql.Data.Planners;
 using PrimarSql.Data.Sources;
 using PrimarSql.Data.Utilities;
 using static PrimarSql.Internal.PrimarSqlParser;
-using static PrimarSql.Data.Utilities.Validator;
+using static PrimarSql.Data.Utilities.ValidateUtility;
 
 namespace PrimarSql.Data.Visitors
 {
-    // TODO: internal
-    public static class ContextVisitor
+    internal static class ContextVisitor
     {
         public static QueryPlanner Visit(RootContext context)
         {

@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Models
 {
-    public class SortKey : IKey
+    internal sealed class SortKey : IKey
     {
         public ExpressionAttributeName ExpressionAttributeName { get; set; }
 

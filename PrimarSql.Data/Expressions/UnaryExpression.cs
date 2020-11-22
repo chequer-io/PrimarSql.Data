@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Expressions
 {
-    public class UnaryExpression : IExpression
+    internal sealed class UnaryExpression : IExpression
     {
         public string Operator { get; set; }
         

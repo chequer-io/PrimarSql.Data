@@ -12,7 +12,7 @@ using PrimarSql.Data.Sources;
 
 namespace PrimarSql.Data.Providers
 {
-    public sealed class ApiDataProvider : IDataProvider
+    internal sealed class ApiDataProvider : IDataProvider
     {
         private readonly TableDescription _tableDescription;
         private IRequester _requester;

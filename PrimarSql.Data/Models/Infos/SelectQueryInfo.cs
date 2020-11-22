@@ -4,7 +4,7 @@ using PrimarSql.Data.Sources;
 
 namespace PrimarSql.Data.Models
 {
-    public sealed class SelectQueryInfo
+    internal sealed class SelectQueryInfo
     {
         public ITableSource TableSource { get; set; }
         

@@ -2,7 +2,7 @@ using System;
 
 namespace PrimarSql.Data.Utilities
 {
-    public static class Validator
+    internal static class ValidateUtility
     {
         public static void ValidateTableName(object[] values)
         {

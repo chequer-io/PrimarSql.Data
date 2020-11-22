@@ -4,7 +4,7 @@ using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data
 {
-    public class PrimarSqlConnectionStringBuilder : DbConnectionStringBuilder
+    public sealed class PrimarSqlConnectionStringBuilder : DbConnectionStringBuilder
     {
         #region Properties
         public string AccessKey
