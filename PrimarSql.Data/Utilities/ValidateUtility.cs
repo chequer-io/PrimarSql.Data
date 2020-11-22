@@ -1,10 +1,11 @@
 using System;
+using PrimarSql.Data.Models.Columns;
 
 namespace PrimarSql.Data.Utilities
 {
     internal static class ValidateUtility
     {
-        public static void ValidateTableName(object[] values)
+        public static void ValidateTableName(IPart[] values)
         {
             if (values.Length == 0)
                 throw new InvalidOperationException("Empty Table name.");
@@ -13,7 +14,7 @@ namespace PrimarSql.Data.Utilities
                 throw new InvalidOperationException("Table name should be single identifier");
         }
         
-        public static void ValidateTableWithIndexName(object[] values)
+        public static void ValidateTableWithIndexName(IPart[] values)
         {
             if (values.Length == 0)
                 throw new InvalidOperationException("Empty Table name.");

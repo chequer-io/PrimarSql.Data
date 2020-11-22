@@ -20,7 +20,7 @@ namespace PrimarSql.Data.Processors
             _schemaTable.Columns.Add(SchemaTableColumn.ColumnName, typeof(string));
             _schemaTable.Columns.Add(SchemaTableColumn.ColumnOrdinal, typeof(int));
             _schemaTable.Columns.Add(SchemaTableColumn.DataType, typeof(Type));
-            _schemaTable.Columns.Add("Path", typeof(object[]));
+            _schemaTable.Columns.Add("Path", typeof(IPart[]));
             _schemaTable.Columns.Add(SchemaTableOptionalColumn.IsReadOnly, typeof(bool));
 
             foreach (var column in columns)
@@ -38,17 +38,17 @@ namespace PrimarSql.Data.Processors
             return _schemaTable;
         }
 
-        private string BuildPath(IEnumerable<object> obj)
+        private string BuildPath(IEnumerable<IPart> obj)
         {
             return string.Join("", obj.Select(o =>
             {
                 switch (o)
                 {
-                    case string s:
-                        return $"['{s}']";
+                    case IdentifierPart identifierPart:
+                        return $"['{identifierPart.Identifier}']";
 
-                    case int i:
-                        return $"[{i}]";
+                    case IndexPart indexPart:
+                        return $"[{indexPart.Index}]";
                 }
 
                 return string.Empty;
@@ -61,7 +61,7 @@ namespace PrimarSql.Data.Processors
 
             return _schemaTable.Rows.Cast<DataRow>().Select(dataRow =>
             {
-                var name = "$" + BuildPath((object[])dataRow["path"]);
+                var name = "$" + BuildPath((IPart[])dataRow["path"]);
 
                 return jObject.SelectToken(name);
             }).ToArray();

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using PrimarSql.Data.Extensions;
+using PrimarSql.Data.Models.Columns;
 
 namespace PrimarSql.Data.Utilities
 {
@@ -83,9 +84,9 @@ namespace PrimarSql.Data.Utilities
             return new string(buffer, 0, index);
         }
 
-        public static object[] Parse(string value)
+        public static IPart[] Parse(string value)
         {
-            var result = new List<object>();
+            var result = new List<IPart>();
             ReadOnlySpan<char> span = value.AsSpan();
             var buffer = new StringBuilder();
             var escaped = false;
@@ -98,11 +99,11 @@ namespace PrimarSql.Data.Utilities
                     var i = buffer.ToString()[1..^1];
                     if (i.Length == 0)
                         throw new InvalidOperationException("Identifier index is empty");
-                    result.Add(int.Parse(i));
+                    result.Add(new IndexPart(int.Parse(i)));
                 }
                 else
                 {
-                    result.Add(escaped ? Unescape(buffer.ToString()) : buffer.ToString());
+                    result.Add(new IdentifierPart(escaped ? Unescape(buffer.ToString()) : buffer.ToString()));
                 }
                         
                 buffer.Clear();

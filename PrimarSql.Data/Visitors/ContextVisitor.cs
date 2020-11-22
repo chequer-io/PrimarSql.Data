@@ -204,7 +204,7 @@ namespace PrimarSql.Data.Visitors
             {
                 case AtomTableItemContext atomTableItemContext:
                 {
-                    object[] identifiers = IdentifierUtility.Parse(atomTableItemContext.tableName().GetText());
+                    IPart[] identifiers = IdentifierUtility.Parse(atomTableItemContext.tableName().GetText());
                     ValidateTableWithIndexName(identifiers);
 
                     return new AtomTableSource(
@@ -259,7 +259,7 @@ namespace PrimarSql.Data.Visitors
             {
                 TargetTables = context.tableName().Select(tableName =>
                 {
-                    object[] result = IdentifierUtility.Parse(tableName.GetText());
+                    IPart[] result = IdentifierUtility.Parse(tableName.GetText());
                     ValidateTableName(result);
 
                     return result.FirstOrDefault()?.ToString();
