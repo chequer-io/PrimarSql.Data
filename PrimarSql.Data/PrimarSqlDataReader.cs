@@ -2,56 +2,65 @@
 using System.Collections;
 using System.Data;
 using System.Data.Common;
-using PrimarSql.Data.Cursor;
+using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data
 {
     public sealed class PrimarSqlDataReader : DbDataReader
     {
-        private readonly ICursor _cursor;
+        private readonly IDataProvider _dataProvider;
+        
+        public override int FieldCount => _dataProvider.GetSchemaTable().Rows.Count;
 
-        public override int FieldCount => _cursor.FieldCount;
+        public override bool HasRows => _dataProvider.HasRows;
 
-        public override bool HasRows => _cursor.HasRows;
+        public override int RecordsAffected => _dataProvider.RecordsAffected;
 
-        public override int RecordsAffected => _cursor.RecordsAffected;
-
-        public override bool IsClosed => _cursor.IsClosed;
+        public override bool IsClosed => false;
 
         public override int Depth => 0;
 
-        public PrimarSqlDataReader(ICursor cursor)
+        public PrimarSqlDataReader(IDataProvider dataProvider)
         {
-            _cursor = cursor;
+            _dataProvider = dataProvider;
         }
 
-        public override object this[int ordinal] => _cursor[ordinal];
+        public override object this[int ordinal] => _dataProvider[ordinal];
 
-        public override object this[string name] => _cursor[name];
+        public override object this[string name] => _dataProvider[GetOrdinal(name)];
 
         public override DataTable GetSchemaTable()
         {
-            return _cursor.GetSchemaTable();
+            return _dataProvider.GetSchemaTable();
         }
         
         public override string GetName(int ordinal)
         {
-            return _cursor.Getname(ordinal);
+            var dataRow = _dataProvider.GetDataRow(ordinal);
+            return dataRow[SchemaTableColumn.ColumnName].ToString();
         }
 
         public override int GetOrdinal(string name)
         {
-            return _cursor.GetOrdinal(name);
+            var dataRow = _dataProvider.GetDataRow(name);
+            return (int)dataRow[SchemaTableColumn.ColumnOrdinal];
         }
 
         public override string GetDataTypeName(int ordinal)
         {
-            return _cursor.GetDataTypeName(ordinal);
+            var dataRow = _dataProvider.GetDataRow(ordinal);
+            return ((Type)dataRow[SchemaTableColumn.DataType])?.Name;
+        }
+
+        public override Type GetFieldType(int ordinal)
+        {
+            var dataRow = _dataProvider.GetDataRow(ordinal);
+            return (Type)dataRow[SchemaTableColumn.DataType];
         }
 
         public override object GetValue(int ordinal)
         {
-            return _cursor.GetData(ordinal);
+            return _dataProvider[ordinal];
         }
 
         public override int GetValues(object[] values)
@@ -85,11 +94,6 @@ namespace PrimarSql.Data
         public override DateTime GetDateTime(int ordinal)
         {
             return (DateTime)GetValue(ordinal);
-        }
-
-        public override Type GetFieldType(int ordinal)
-        {
-            return _cursor.GetFieldType(ordinal);
         }
 
         public override Guid GetGuid(int ordinal)
@@ -147,7 +151,7 @@ namespace PrimarSql.Data
             return false;
         }
 
-        public override bool Read() => _cursor.Read();
+        public override bool Read() => _dataProvider.Next();
 
         public override bool IsDBNull(int ordinal)
         {
@@ -156,7 +160,7 @@ namespace PrimarSql.Data
 
         internal class PrimarSqlEnumerator : IEnumerator
         {
-            public object Current => _dataReader._cursor.GetDatas();
+            public object Current => _dataReader._dataProvider.Current;
 
             private readonly PrimarSqlDataReader _dataReader;
 

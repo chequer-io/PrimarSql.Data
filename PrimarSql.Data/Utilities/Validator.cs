@@ -4,7 +4,7 @@ namespace PrimarSql.Data.Utilities
 {
     public static class Validator
     {
-        public static void ValidateTableName(string[] values)
+        public static void ValidateTableName(object[] values)
         {
             if (values.Length == 0)
                 throw new InvalidOperationException("Empty Table name.");
@@ -13,7 +13,7 @@ namespace PrimarSql.Data.Utilities
                 throw new InvalidOperationException("Table name should be single identifier");
         }
         
-        public static void ValidateTableWithIndexName(string[] values)
+        public static void ValidateTableWithIndexName(object[] values)
         {
             if (values.Length == 0)
                 throw new InvalidOperationException("Empty Table name.");

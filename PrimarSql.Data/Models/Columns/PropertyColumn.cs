@@ -2,6 +2,8 @@
 {
     public class PropertyColumn : IColumn
     {
-        public string Name { get; set; }
+        public object[] Name { get; set; }
+        
+        public string Alias { get; set; }
     }
 }

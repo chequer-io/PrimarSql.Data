@@ -14,7 +14,7 @@ namespace PrimarSql.Data.Requesters
 
             if (SortKey != null) // if sort key exists
             {
-                if (QueryInfo.StartSortKey != null && 
+                if (QueryInfo.StartSortKey != null &&
                     QueryInfo.StartSortKey.Value.ToAttributeValue().ToValue() != SortKey.ExpressionAttributeValue.Value.ToValue())
                     HasRows = false;
             }
@@ -24,7 +24,6 @@ namespace PrimarSql.Data.Requesters
                 if (!QueryInfo.StartHashKey.Value.ToAttributeValue().ToValue().Equals(HashKey.ExpressionAttributeValue.Value.ToValue()))
                     HasRows = false;
             }
-                
         }
 
         public override bool Next()
@@ -47,9 +46,10 @@ namespace PrimarSql.Data.Requesters
 
             if (getItemResponse.Item.Count == 0)
                 return false;
-            
+
             Current = getItemResponse.Item;
-            
+            HasRows = false;
+
             return true;
         }
     }

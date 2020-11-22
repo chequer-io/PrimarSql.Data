@@ -83,14 +83,31 @@ namespace PrimarSql.Data.Utilities
             return new string(buffer, 0, index);
         }
 
-        public static string[] Parse(string value)
+        public static object[] Parse(string value)
         {
-            var result = new List<string>();
+            var result = new List<object>();
             ReadOnlySpan<char> span = value.AsSpan();
             var buffer = new StringBuilder();
             var escaped = false;
             string closeParen = null;
 
+            void Add()
+            {
+                if (buffer[0] == '[' && buffer[^1] == ']')
+                {
+                    var i = buffer.ToString()[1..^1];
+                    if (i.Length == 0)
+                        throw new InvalidOperationException("Identifier index is empty");
+                    result.Add(int.Parse(i));
+                }
+                else
+                {
+                    result.Add(escaped ? Unescape(buffer.ToString()) : buffer.ToString());
+                }
+                        
+                buffer.Clear();
+            }
+            
             for (int i = 0; i < span.Length; i++)
             {
                 var c = span[i];
@@ -98,10 +115,17 @@ namespace PrimarSql.Data.Utilities
 
                 switch (c)
                 {
-                    case '.' when closeParen == null:
-                        result.Add(escaped ? Unescape(buffer.ToString()) : buffer.ToString());
+                    case '[' when closeParen == null:
+                        Add();
                         escaped = false;
-                        buffer.Clear();
+                        
+                        buffer.Append(c);
+                        closeParen = _closeParen[_openParen.IndexOf("[")];
+                        break;
+
+                    case '.' when closeParen == null:
+                        Add();
+                        escaped = false;
                         break;
 
                     case '\\' when !end && closeParen?.Length == 1:
@@ -150,14 +174,15 @@ namespace PrimarSql.Data.Utilities
                         }
 
                         break;
-
+                    
                     default:
                         buffer.Append(c);
                         break;
                 }
             }
 
-            result.Add(escaped ? Unescape(buffer.ToString()) : buffer.ToString());
+            Add();
+            // result.Add(escaped ? Unescape(buffer.ToString()) : buffer.ToString());
 
             return result.ToArray();
         }

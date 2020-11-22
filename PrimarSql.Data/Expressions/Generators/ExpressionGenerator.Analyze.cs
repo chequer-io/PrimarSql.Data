@@ -146,7 +146,7 @@ namespace PrimarSql.Data.Expressions.Generators
             if (@operator != "=" || target.Name.Length > 1)
                 return false;
 
-            var targetName = target.Name[0];
+            var targetName = target.Name[0].ToString();
 
             if (targetName != HashKeyName)
                 return false;
@@ -169,7 +169,7 @@ namespace PrimarSql.Data.Expressions.Generators
             if (target.Name.Length > 1 || !IsValidSortKeyOperator(@operator))
                 return false;
 
-            var targetName = target.Name[0];
+            var targetName = target.Name[0].ToString();
 
             if (targetName != SortKeyName)
                 return false;

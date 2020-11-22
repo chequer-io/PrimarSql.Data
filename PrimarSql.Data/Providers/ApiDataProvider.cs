@@ -1,65 +1,101 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
+using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions.Generators;
-using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
+using PrimarSql.Data.Models.Columns;
+using PrimarSql.Data.Processors;
 using PrimarSql.Data.Requesters;
 using PrimarSql.Data.Sources;
 
-namespace PrimarSql.Data.Cursor.Providers
+namespace PrimarSql.Data.Providers
 {
-    public class ApiDataProvider : IDataProvider
+    public sealed class ApiDataProvider : IDataProvider
     {
         private readonly TableDescription _tableDescription;
         private IRequester _requester;
-        private DataTable _dataTable;
-        private List<string> _columns = new List<string>();
+        private IProcessor _processor;
 
         public QueryContext Context { get; }
 
         public SelectQueryInfo QueryInfo { get; }
 
+        public object this[int i] => GetData(i);
+
         public bool HasRows => _requester.HasRows;
 
-        public DataCell[] Current { get; private set; }
+        public int RecordsAffected => -1;
 
-        public string TableName =>
-            (QueryInfo.TableSource as AtomTableSource)?.TableName ?? throw new InvalidOperationException("TableSource is not AtomTableSource.");
+        public JToken[] Current { get; private set; }
 
-        public string IndexName =>
-            (QueryInfo.TableSource as AtomTableSource)?.IndexName;
+        public AtomTableSource AtomTableSource => QueryInfo.TableSource as AtomTableSource;
+        
+        public string TableName => AtomTableSource?.TableName;
+
+        public string IndexName => AtomTableSource?.IndexName;
 
         public ApiDataProvider(QueryContext context, SelectQueryInfo queryInfo)
         {
             Context = context;
             QueryInfo = queryInfo;
 
-            _dataTable = new DataTable();
-            _dataTable.Columns.Add(SchemaTableColumn.ColumnName, typeof(string));
-            _dataTable.Columns.Add(SchemaTableColumn.ColumnOrdinal, typeof(int));
-            _dataTable.Columns.Add(SchemaTableColumn.DataType, typeof(Type));
-            _dataTable.Columns.Add(SchemaTableOptionalColumn.IsReadOnly, typeof(bool));
-
             _tableDescription = context.GetTableDescription(TableName);
+
+            SetProcessor();
             SetRequester();
         }
 
         public DataTable GetSchemaTable()
         {
-            return _dataTable;
+            return _processor.GetSchemaTable();
+        }
+
+        public object GetData(int ordinal)
+        {
+            var data = Current[ordinal];
+
+            if (data is JValue jValue)
+                return jValue.Value;
+
+            return data.ToString();
+        }
+
+        public DataRow GetDataRow(string name)
+        {
+            return _processor.GetDataRow(name);
+        }
+
+        public DataRow GetDataRow(int ordinal)
+        {
+            return _processor.GetDataRow(ordinal);
         }
 
         public bool Next()
         {
             var flag = _requester.Next();
 
-            Current = flag ? ToDataCells(_requester.Current) : null;
+            Current = flag ? _processor.Process(_requester.Current) : null;
 
             return flag;
+        }
+
+        #region Intalize Processor/Requester
+        private void SetProcessor()
+        {
+            if (QueryInfo.Columns.FirstOrDefault() is StarColumn)
+            {
+                _processor = new StarProcessor();
+            }
+            else if (QueryInfo.Columns.All(c => c is PropertyColumn))
+            {
+                _processor = new ColumnProcessor(QueryInfo.Columns.Select(c => c as PropertyColumn));    
+            }
+            else
+            {
+                throw new NotSupportedException("Not supported column type");
+            }
         }
 
         private void SetRequester()
@@ -115,28 +151,6 @@ namespace PrimarSql.Data.Cursor.Providers
                 generateResult.FilterExpression
             );
         }
-
-        public DataCell[] ToDataCells(Dictionary<string, AttributeValue> item)
-        {
-            return item.Select(c =>
-            {
-                var value = c.Value.ToValue();
-                var dataType = value.GetType();
-
-                if (!_columns.Contains(c.Key))
-                {
-                    _columns.Add(c.Key);
-                    _dataTable.Rows.Add(c.Key, _columns.Count - 1, dataType, false);
-                }
-
-                return new DataCell
-                {
-                    Data = value,
-                    DataType = dataType,
-                    TypeName = dataType.Name,
-                    Name = c.Key,
-                };
-            }).ToArray();
-        }
+        #endregion
     }
 }

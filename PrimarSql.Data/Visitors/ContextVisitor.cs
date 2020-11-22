@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
@@ -41,7 +42,9 @@ namespace PrimarSql.Data.Visitors
             switch (context.children[0])
             {
                 case SelectStatementContext selectStatementContext:
-                    return new SelectQueryPlanner(VisitSelectStatement(selectStatementContext));;
+                    return new SelectQueryPlanner(VisitSelectStatement(selectStatementContext));
+
+                    ;
 
                 case InsertStatementContext insertStatementContext:
 
@@ -150,10 +153,36 @@ namespace PrimarSql.Data.Visitors
 
         public static IColumn[] VisitSelectElements(SelectElementsContext context)
         {
-            return new IColumn[]
+            if (context.star != null)
             {
-                new StarColumn()
-            };
+                return new IColumn[]
+                {
+                    new StarColumn()
+                };
+            }
+
+            return context.selectElement().Select(VisitSelectElement).ToArray();
+        }
+
+        public static IColumn VisitSelectElement(SelectElementContext context)
+        {
+            switch (context)
+            {
+                case SelectColumnElementContext selectColumnElementContext:
+                    return new PropertyColumn
+                    {
+                        Name = IdentifierUtility.Parse(selectColumnElementContext.fullColumnName().GetText()),
+                        Alias = IdentifierUtility.Unescape(selectColumnElementContext.alias?.GetText()),
+                    };
+
+                case SelectFunctionElementContext selectFunctionElementContext:
+                    throw new NotSupportedException("Not Supported Select Element Function Feature.");
+
+                case SelectExpressionElementContext selectExpressionElementContext:
+                    throw new NotSupportedException("Not Supported Select Element Expression Feature.");
+            }
+
+            return null;
         }
 
         public static ITableSource VisitTableSource(TableSourceContext context)
@@ -176,12 +205,12 @@ namespace PrimarSql.Data.Visitors
             {
                 case AtomTableItemContext atomTableItemContext:
                 {
-                    string[] identifiers = IdentifierUtility.Parse(atomTableItemContext.tableName().GetText());
+                    object[] identifiers = IdentifierUtility.Parse(atomTableItemContext.tableName().GetText());
                     ValidateTableWithIndexName(identifiers);
 
                     return new AtomTableSource(
-                        identifiers[0],
-                        identifiers.Length == 2 ? identifiers[1] : string.Empty
+                        identifiers[0].ToString(),
+                        identifiers.Length == 2 ? identifiers[1].ToString() : string.Empty
                     );
                 }
 
@@ -231,10 +260,10 @@ namespace PrimarSql.Data.Visitors
             {
                 TargetTables = context.tableName().Select(tableName =>
                 {
-                    string[] result = IdentifierUtility.Parse(tableName.GetText());
+                    object[] result = IdentifierUtility.Parse(tableName.GetText());
                     ValidateTableName(result);
 
-                    return result.FirstOrDefault();
+                    return result.FirstOrDefault()?.ToString();
                 }).ToArray()
             };
 

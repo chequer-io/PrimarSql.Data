@@ -1,5 +1,5 @@
 ﻿using System.Data.Common;
-using PrimarSql.Data.Cursor;
+using PrimarSql.Data.Providers;
 using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Planners
@@ -16,7 +16,7 @@ namespace PrimarSql.Data.Planners
         public override DbDataReader Execute()
         {
             return new PrimarSqlDataReader(
-                new SelectCursor(QueryContext, QueryInfo)
+                new ApiDataProvider(QueryContext, QueryInfo)
             );
         }
     }

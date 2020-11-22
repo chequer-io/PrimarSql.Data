@@ -2,6 +2,6 @@
 {
     public class MemberExpression : IExpression
     {
-        public string[] Name { get; set; }
+        public object[] Name { get; set; }
     }
 }
