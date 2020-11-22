@@ -94,10 +94,10 @@ namespace PrimarSql.Data.Expressions.Generators
             var leftCondition = AnalyzeInternal(left, expression, depth);
             var rightCondition = AnalyzeInternal(right, expression, depth);
 
-            if (!(GetPrimaryKeyFromCondition(leftCondition, out var leftKey) && @operator.EqualsIgnore("AND")))
+            if (!(GetPrimaryKeyFromCondition(leftCondition, out var leftKey) && (@operator.EqualsIgnore("AND") || @operator.Equals("&&"))))
                 Context.RemoveKey(leftKey);
 
-            if (!(GetPrimaryKeyFromCondition(rightCondition, out var rightKey) && @operator.EqualsIgnore("AND")))
+            if (!(GetPrimaryKeyFromCondition(rightCondition, out var rightKey) && (@operator.EqualsIgnore("AND") || @operator.Equals("&&"))))
                 Context.RemoveKey(rightKey);
 
             return new OperatorCondition(leftCondition, @operator, rightCondition);
