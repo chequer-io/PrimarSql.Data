@@ -1,0 +1,41 @@
+﻿using System.Data;
+using Newtonsoft.Json.Linq;
+
+namespace PrimarSql.Data.Providers
+{
+    public class EmptyDataProvider : IDataProvider
+    {
+        public JToken[] Current => null;
+
+        public object this[int i] => null;
+
+        public bool HasRows => false;
+
+        public int RecordsAffected => 0;
+
+        public object GetData(int ordinal)
+        {
+            return null;
+        }
+
+        public DataRow GetDataRow(int ordinal)
+        {
+            return null;
+        }
+
+        public DataRow GetDataRow(string name)
+        {
+            return null;
+        }
+
+        public DataTable GetSchemaTable()
+        {
+            return null;
+        }
+
+        public bool Next()
+        {
+            return false;
+        }
+    }
+}
