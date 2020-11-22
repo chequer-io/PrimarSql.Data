@@ -14,6 +14,9 @@ namespace PrimarSql.Data.Expressions.Generators
 
         private ICondition AnalyzeInternal(IExpression expression, IExpression parent, int depth)
         {
+            if (expression == null)
+                return null;
+            
             switch (expression)
             {
                 case MultipleExpression multipleExpression:
