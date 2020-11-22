@@ -1,0 +1,31 @@
+﻿namespace PrimarSql.Data.Models
+{
+    public enum AwsRegion
+    {
+        USEast1,
+        USEast2,
+        USWest1,
+        USWest2,
+        EUNorth1,
+        EUWest1,
+        EUWest2,
+        EUWest3,
+        EUCentral1,
+        EUSouth1,
+        APEast1,
+        APNortheast1,
+        APNortheast2,
+        APNortheast3,
+        APSouth1,
+        APSoutheast1,
+        APSoutheast2,
+        SAEast1,
+        USGovCloudEast1,
+        USGovCloudWest1,
+        CNNorth1,
+        CNNorthWest1,
+        CACentral1,
+        MESouth1,
+        AFSouth1
+    }
+}
