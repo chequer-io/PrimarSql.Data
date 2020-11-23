@@ -4,7 +4,6 @@ using System.Data.Common;
 using System.Linq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
-using PrimarSql.Data.Planners.Index;
 using PrimarSql.Data.Planners.Table;
 using PrimarSql.Data.Providers;
 
@@ -71,27 +70,13 @@ namespace PrimarSql.Data.Planners
 
             foreach (var index in QueryInfo.IndexDefinitions)
             {
-                List<KeySchemaElement> keySchema = GetKeySchema(index.HashKey, index.SortKey);
-
-                var projection = new Projection
-                {
-                    ProjectionType = index.IndexType switch
-                    {
-                        IndexType.All => ProjectionType.ALL,
-                        IndexType.Include => ProjectionType.INCLUDE,
-                        IndexType.KeysOnly => ProjectionType.KEYS_ONLY,
-                        _ => ProjectionType.ALL
-                    },
-                    NonKeyAttributes = index.IndexType != IndexType.Include ? null : index.IncludeColumns.ToList(),
-                };
-
                 if (index.IsLocalIndex)
                 {
                     var localIndex = new LocalSecondaryIndex
                     {
                         IndexName = index.IndexName,
-                        Projection = projection,
-                        KeySchema = keySchema
+                        Projection = index.Projection,
+                        KeySchema = index.KeySchema
                     };
 
                     request.LocalSecondaryIndexes.Add(localIndex);
@@ -101,8 +86,8 @@ namespace PrimarSql.Data.Planners
                     var globalIndex = new GlobalSecondaryIndex
                     {
                         IndexName = index.IndexName,
-                        Projection = projection,
-                        KeySchema = keySchema
+                        Projection = index.Projection,
+                        KeySchema = index.KeySchema
                     };
 
                     request.GlobalSecondaryIndexes.Add(globalIndex);
