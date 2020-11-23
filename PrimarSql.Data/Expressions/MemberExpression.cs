@@ -1,7 +1,9 @@
-﻿namespace PrimarSql.Data.Expressions
+﻿using PrimarSql.Data.Models.Columns;
+
+namespace PrimarSql.Data.Expressions
 {
     internal sealed class MemberExpression : IExpression
     {
-        public object[] Name { get; set; }
+        public IPart[] Name { get; set; }
     }
 }

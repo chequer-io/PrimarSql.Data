@@ -136,8 +136,8 @@ namespace PrimarSql.Data.Expressions.Generators
         {
             if (parent == null)
                 throw new InvalidOperationException("Literal value cannot be used alone.");
-
-            return new StringCondition(string.Join(".", expression.Name));
+            
+            return new StringCondition(string.Join(".", expression.Name.ToName()));
         }
         #endregion
 

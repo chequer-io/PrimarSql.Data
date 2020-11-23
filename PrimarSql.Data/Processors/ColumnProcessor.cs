@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-using System.Text;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Utilities;
+using PrimarSql.Data.Extensions;
 
 namespace PrimarSql.Data.Processors
 {
@@ -26,7 +26,7 @@ namespace PrimarSql.Data.Processors
 
             foreach (var column in columns)
             {
-                string name = string.IsNullOrEmpty(column.Alias) ? ConverToName(column.Name) : column.Alias;
+                string name = string.IsNullOrEmpty(column.Alias) ? column.Name.ToName() : column.Alias;
 
                 _schemaTable.Rows.Add(name, 0, typeof(object), column.Name, false);
             }
@@ -44,34 +44,6 @@ namespace PrimarSql.Data.Processors
             return _schemaTable.Rows
                 .Cast<DataRow>()
                 .Select(dataRow => SelectToken(jObject, (IPart[])dataRow["path"])).ToArray();
-        }
-
-        private string ConverToName(IEnumerable<IPart> parts)
-        {
-            var sb = new StringBuilder();
-
-            foreach (var part in parts)
-            {
-                switch (part)
-                {
-                    case IdentifierPart identifierPart:
-                    {
-                        if (sb.Length != 0)
-                            sb.Append(".");
-
-                        sb.Append($"'{identifierPart.Identifier.Replace("'", "''")}'");
-                        break;
-                    }
-
-                    case IndexPart indexPart:
-                    {
-                        sb.Append($"[{indexPart.Index}]");
-                        break;
-                    }
-                }
-            }
-
-            return sb.ToString();
         }
 
         private JToken SelectToken(JToken token, IEnumerable<IPart> parts)

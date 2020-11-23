@@ -246,7 +246,7 @@ namespace PrimarSql.Data.Visitors
                     return VisitAlterTableContext(alterTableContext);
 
                 case DropIndexContext dropIndexContext:
-                    break;
+                    return VisitDropIndexContext(dropIndexContext);
 
                 case DropTableContext dropTableContext:
                     return VisitDropTableContext(dropTableContext);
@@ -490,6 +490,19 @@ namespace PrimarSql.Data.Visitors
                 .ToArray();
         }
 
+        public static DropIndexPlanner VisitDropIndexContext(DropIndexContext context)
+        {
+            string indexName = GetSinglePartName(context.indexName.GetText(), "Index Name");
+            string tableName = VisitTableName(context.tableName());
+
+            var dropIndexPlanner = new DropIndexPlanner
+            {
+                QueryInfo = new DropIndexQueryInfo(tableName, indexName)
+            };
+
+            return dropIndexPlanner;
+        }
+        
         public static DropTablePlanner VisitDropTableContext(DropTableContext context)
         {
             IEnumerable<string> targetTables = context.tableName().Select(VisitTableName);

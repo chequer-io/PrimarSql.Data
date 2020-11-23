@@ -15,8 +15,6 @@ namespace PrimarSql.Data.Planners
         
         public bool SkipIfExists { get; set; }
 
-        public string TableName { get; set; }
-
         public IEnumerable<KeyTableColumn> TableColumns => _tableColumns.Values;
 
         public IEnumerable<IndexDefinition> IndexDefinitions => _indexDefinitions.Values;

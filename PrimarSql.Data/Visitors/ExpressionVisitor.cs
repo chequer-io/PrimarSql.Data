@@ -2,6 +2,7 @@
 using System.Linq;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models;
+using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Utilities;
 using static PrimarSql.Internal.PrimarSqlParser;
 
@@ -161,7 +162,7 @@ namespace PrimarSql.Data.Visitors
                     {
                         Member = new MemberExpression
                         {
-                            Name = new object[] { "EXISTS" }
+                            Name = new IPart[] { new IdentifierPart("EXISTS") }
                         },
                         Parameters = new IExpression[]
                         {
