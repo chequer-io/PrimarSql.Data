@@ -10,7 +10,7 @@ namespace PrimarSql.Data.Planners.Index
 
         public int WriteCapacity { get; set; }
 
-        public override void Action(UpdateTableRequest request)
+        public override void Action(UpdateTableRequest request, TableDescription tableDescription)
         {
             request.GlobalSecondaryIndexUpdates.Add(new GlobalSecondaryIndexUpdate
             {

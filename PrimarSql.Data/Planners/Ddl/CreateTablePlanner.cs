@@ -9,19 +9,9 @@ using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
 {
-    internal sealed class CreateTablePlanner : QueryPlanner<CreateTableQueryInfo>
+    internal sealed class CreateTablePlanner : TablePlanner<CreateTableQueryInfo>
     {
         private const int DefaultCapacity = 10;
-
-        private readonly string[] _stringTypes =
-        {
-            "varchar", "text", "mediumtext", "longtext", "string"
-        };
-
-        private readonly string[] _numberTypes =
-        {
-            "int", "integer", "bigint"
-        };
 
         private List<KeySchemaElement> GetKeySchema(string hashKey, string sortKey)
         {
@@ -36,21 +26,23 @@ namespace PrimarSql.Data.Planners
             return keySchema;
         }
 
-        private ScalarAttributeType DataTypeToScalarAttributeType(string dataType)
-        {
-            dataType = dataType.ToLower();
-
-            if (_stringTypes.Contains(dataType))
-                return ScalarAttributeType.S;
-
-            if (_numberTypes.Contains(dataType))
-                return ScalarAttributeType.N;
-
-            throw new NotSupportedException($"{dataType.ToUpper()} cannot use to Index Type.");
-        }
-
         public override DbDataReader Execute()
         {
+            try
+            {
+                QueryContext.GetTableDescription(QueryInfo.TableName);
+                
+                if (QueryInfo.SkipIfExists)
+                    return new PrimarSqlDataReader(new EmptyDataProvider());
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+            
+                
+            QueryInfo.Validate();
+            
             var request = new CreateTableRequest
             {
                 TableName = QueryInfo.TableName,
@@ -98,9 +90,9 @@ namespace PrimarSql.Data.Planners
             {
                 request.AttributeDefinitions.Add(new AttributeDefinition(column.ColumnName, DataTypeToScalarAttributeType(column.DataType)));
             }
-            
-            QueryContext.Client.CreateTableAsync(request).Wait();
 
+            QueryContext.Client.CreateTableAsync(request).Wait();
+            
             return new PrimarSqlDataReader(new EmptyDataProvider());
         }
     }

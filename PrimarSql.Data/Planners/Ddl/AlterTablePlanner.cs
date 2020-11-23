@@ -6,13 +6,16 @@ using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
 {
-    internal sealed class AlterTablePlanner : QueryPlanner<AlterTableQueryInfo>
+    internal sealed class AlterTablePlanner : TablePlanner<AlterTableQueryInfo>
     {
         public override DbDataReader Execute()
         {
-            var request = new UpdateTableRequest();
-
-            request.TableName = QueryInfo.TableName;
+            var tableDescription = QueryContext.GetTableDescription(QueryInfo.TableName);
+            
+            var request = new UpdateTableRequest
+            {
+                TableName = QueryInfo.TableName
+            };
 
             if (QueryInfo.TableBillingMode != null)
                 request.BillingMode = QueryInfo.TableBillingMode switch
@@ -25,10 +28,13 @@ namespace PrimarSql.Data.Planners
             if (QueryInfo.ReadCapacity != null && QueryInfo.WriteCapacity != null)
                 request.ProvisionedThroughput = new ProvisionedThroughput(QueryInfo.ReadCapacity.Value, QueryInfo.WriteCapacity.Value);
 
-            // TODO: Add Alter new Column to Grammer and add Attribute to AlterTableQueryInfo
-            
             foreach (var action in QueryInfo.IndexActions)
-                action.Action(request);
+                action.Action(request, tableDescription);
+            
+            foreach (var column in QueryInfo.TableColumns)
+                request.AttributeDefinitions.Add(new AttributeDefinition(column.ColumnName, DataTypeToScalarAttributeType(column.DataType)));
+            
+            QueryContext.Client.UpdateTableAsync(request).Wait();
 
             return new PrimarSqlDataReader(new EmptyDataProvider());
         }

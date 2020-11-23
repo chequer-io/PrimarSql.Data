@@ -279,10 +279,6 @@ namespace PrimarSql.Data.Visitors
 
         public static void VisitCreateDefinitions(CreateDefinitionsContext context, CreateTableQueryInfo queryInfo)
         {
-            var columns = new Dictionary<string, TableColumn>();
-            var constraints = new Dictionary<string, bool?>();
-            var indexes = new Dictionary<string, IndexDefinition>();
-
             foreach (var definition in context.createDefinition())
             {
                 switch (definition)
@@ -290,86 +286,99 @@ namespace PrimarSql.Data.Visitors
                     case ColumnDeclarationContext columnDeclarationContext:
                     {
                         var tableColumn = VisitColumnDeclaration(columnDeclarationContext);
-
-                        if (columns.ContainsKey(tableColumn.ColumnName))
-                            throw new InvalidOperationException($"Column name {tableColumn.ColumnName} duplicate.");
-
-                        columns[tableColumn.ColumnName] = tableColumn;
+                        queryInfo.AddTableColumn(tableColumn);
                         break;
                     }
 
                     case ConstraintDeclarationContext constraintDeclarationContext:
                     {
-                        (string columnName, bool? isHashKey) = VisitTableConstraint(constraintDeclarationContext.tableConstraint());
-
-                        if (constraints.ContainsKey(columnName))
-                            throw new InvalidOperationException($"Column name {columnName} duplicate.");
-
-                        constraints[columnName] = isHashKey;
+                        (string columnName, bool isHashKey) = VisitTableConstraint(constraintDeclarationContext.tableConstraint());
+                        queryInfo.SetConstraint(columnName, isHashKey);
                         break;
                     }
 
                     case IndexDeclarationContext indexColumnDefinitionContext:
                     {
                         var indexDefinition = VisitIndexColumnDefinition(indexColumnDefinitionContext.indexColumnDefinition());
-
-                        if (indexes.ContainsKey(indexDefinition.IndexName))
-                            throw new InvalidOperationException($"Index name {indexDefinition.IndexName} duplicate.");
-
-                        indexes[indexDefinition.IndexName] = indexDefinition;
+                        queryInfo.AddIndexDefinition(indexDefinition);
                         break;
                     }
                 }
             }
-
-            // Column constraint validation
-            foreach ((var columnName, bool? isHashKey) in constraints)
-            {
-                if (!columns.ContainsKey(columnName))
-                    throw new InvalidOperationException($"Column name {columnName} not defined.");
-
-                var tableColumn = columns[columnName];
-
-                if (tableColumn.IsHashKey || tableColumn.IsSortKey)
-                    throw new InvalidOperationException($"Already {columnName} constraint is defined.");
-
-                tableColumn.IsHashKey = isHashKey ?? false;
-                tableColumn.IsSortKey = !isHashKey ?? false;
-            }
-
-            // Index columns validation
-            foreach ((string indexName, var indexDefinition) in indexes)
-            {
-                if (!columns.ContainsKey(indexDefinition.HashKey) || (!string.IsNullOrWhiteSpace(indexDefinition.SortKey) && !columns.ContainsKey(indexDefinition.SortKey)))
-                    throw new InvalidOperationException($"{indexName} use not defined column name.");
-            }
-
-            queryInfo.TableColumns = columns.Select(kv => kv.Value).ToArray();
-            queryInfo.IndexDefinitions = indexes.Select(kv => kv.Value).ToArray();
-
-            // HashKey, SortKey Validation         
-
-            if (queryInfo.TableColumns.Count(column => column.IsHashKey) != 1)
-                throw new InvalidOperationException($"No hash key defined for Table {queryInfo.TableName}.");
-
-            if (queryInfo.TableColumns.Count(column => column.IsSortKey) > 1)
-                throw new InvalidOperationException($"Too many sort key defined for Table {queryInfo.TableName}.");
         }
         #endregion
 
         #region Alter Table
         public static AlterTablePlanner VisitAlterTableContext(AlterTableContext context)
         {
-            var queryInfo = new AlterTableQueryInfo();
+            var queryInfo = new AlterTableQueryInfo
+            {
+                TableName = VisitTableName(context.tableName())
+            };
+            
+            VisitAlterSpecification(context.alterSpecification(), queryInfo);
 
             return new AlterTablePlanner
             {
                 QueryInfo = queryInfo
             };
         }
+
+        public static void VisitAlterSpecification(IEnumerable<AlterSpecificationContext> contexts, AlterTableQueryInfo queryInfo)
+        {
+            foreach (var alterSpecificationContext in contexts)
+            {
+                switch (alterSpecificationContext)
+                {
+                    case AlterTableOptionContext alterTableOptionContext:
+                        VisitTableOption(alterTableOptionContext.tableOption(), queryInfo);
+                        break;
+
+                    case AlterByAddColumnContext alterByAddColumnContext:
+                        queryInfo.AddTableColumn(VisitAlterByAddColumnContext(alterByAddColumnContext.uid(), alterByAddColumnContext.dataType()));
+                        break;
+
+                    case AlterByAddColumnsContext alterByAddColumnsContext:
+                        int i = 0;
+
+                        foreach (var uid in alterByAddColumnsContext.uid())
+                        {
+                            queryInfo.AddTableColumn(VisitAlterByAddColumnContext(uid, alterByAddColumnsContext.dataType(i)));
+                            i++;
+                        }
+
+                        break;
+                    
+                    case AlterAddIndexContext alterAddIndexContext:
+                        var indexDefinition = VisitIndexColumnDefinition(alterAddIndexContext.indexColumnDefinition());
+                        queryInfo.AddIndexAddAction(indexDefinition);
+                        break;
+                    
+                    case AlterIndexThroughputContext alterIndexThroughputContext:
+                        if (!int.TryParse(alterIndexThroughputContext.readCapacity.GetText(), out int readCapacity))
+                            throw new InvalidOperationException("Read capacity cannot be null.");
+                        
+                        if (!int.TryParse(alterIndexThroughputContext.writeCapacity.GetText(), out int writeCapacity))
+                            throw new InvalidOperationException("Write capacity cannot be null.");
+                        
+                        var indexName = GetSinglePartName(alterIndexThroughputContext.uid().GetText(), "Index");
+                        queryInfo.AddIndexAlterAction(indexName, readCapacity, writeCapacity);
+                        break;
+                }
+            }
+        }
+
+        public static TableColumn VisitAlterByAddColumnContext(UidContext uidContext, DataTypeContext dataTypeContext)
+        {
+            return new TableColumn
+            {
+                ColumnName = GetSinglePartName(uidContext.GetText(), "Column"),
+                DataType = dataTypeContext.GetText()
+            };
+        }
         #endregion
 
-        public static void VisitTableOption(TableOptionContext context, CreateTableQueryInfo queryInfo)
+        public static void VisitTableOption(TableOptionContext context, TableQueryInfo queryInfo)
         {
             switch (context)
             {
@@ -396,12 +405,12 @@ namespace PrimarSql.Data.Visitors
             }
         }
 
-        public static TableColumn VisitColumnDeclaration(ColumnDeclarationContext context)
+        public static KeyTableColumn VisitColumnDeclaration(ColumnDeclarationContext context)
         {
             var columnName = GetSinglePartName(context.uid().GetText(), "Column");
             (string dataType, bool? isHashKey) = VisitColumnDefinition(context.columnDefinition());
 
-            return new TableColumn
+            return new KeyTableColumn
             {
                 ColumnName = columnName,
                 DataType = dataType,
@@ -420,7 +429,7 @@ namespace PrimarSql.Data.Visitors
             return (context.dataType().GetText(), isHashKey);
         }
 
-        public static (string name, bool? isHashKey) VisitTableConstraint(TableConstraintContext context)
+        public static (string name, bool isHashKey) VisitTableConstraint(TableConstraintContext context)
         {
             var columnName = GetSinglePartName(context.uid().GetText(), "Column");
 
@@ -451,7 +460,8 @@ namespace PrimarSql.Data.Visitors
             definition.HashKey = hashKey;
             definition.SortKey = sortKey;
 
-            definition.IndexType = VisitIndexOption(context.indexOption());
+            if (context.indexOption() != null)
+                definition.IndexType = VisitIndexOption(context.indexOption());
 
             if (definition.IndexType == IndexType.Include)
                 definition.IncludeColumns = VisitIndexOptionToGetIncludeColumns(context.indexOption());

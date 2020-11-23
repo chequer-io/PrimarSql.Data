@@ -6,7 +6,7 @@ namespace PrimarSql.Data.Planners.Index
     {
         public string IndexName { get; set; }
         
-        public override void Action(UpdateTableRequest request)
+        public override void Action(UpdateTableRequest request, TableDescription tableDescription)
         {
             request.GlobalSecondaryIndexUpdates.Add(new GlobalSecondaryIndexUpdate
             {

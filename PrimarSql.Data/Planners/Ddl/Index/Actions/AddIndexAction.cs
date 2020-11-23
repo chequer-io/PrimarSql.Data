@@ -6,15 +6,21 @@ namespace PrimarSql.Data.Planners.Index
     {
         public IndexDefinition IndexDefinition { get; set; }
 
-        public override void Action(UpdateTableRequest request)
+        public override void Action(UpdateTableRequest request, TableDescription tableDescription)
         {
+            var provisionedThroughput = new ProvisionedThroughput(
+                tableDescription.ProvisionedThroughput.ReadCapacityUnits,
+                tableDescription.ProvisionedThroughput.WriteCapacityUnits
+            );
+            
             request.GlobalSecondaryIndexUpdates.Add(new GlobalSecondaryIndexUpdate
             {
                 Create = new CreateGlobalSecondaryIndexAction
                 {
                     IndexName = IndexDefinition.IndexName,
                     Projection = IndexDefinition.Projection,
-                    KeySchema = IndexDefinition.KeySchema
+                    KeySchema = IndexDefinition.KeySchema,
+                    ProvisionedThroughput = provisionedThroughput,
                 }
             });
         }
