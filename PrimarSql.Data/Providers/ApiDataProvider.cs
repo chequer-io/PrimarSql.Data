@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
+using PrimarSql.Data.Planners;
 using PrimarSql.Data.Processors;
 using PrimarSql.Data.Requesters;
 using PrimarSql.Data.Sources;

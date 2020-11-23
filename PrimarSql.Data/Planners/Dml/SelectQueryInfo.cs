@@ -2,9 +2,9 @@
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Sources;
 
-namespace PrimarSql.Data.Models
+namespace PrimarSql.Data.Planners
 {
-    internal sealed class SelectQueryInfo
+    internal sealed class SelectQueryInfo : IQueryInfo
     {
         public ITableSource TableSource { get; set; }
         

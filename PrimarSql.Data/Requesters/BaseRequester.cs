@@ -2,6 +2,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Models;
+using PrimarSql.Data.Planners;
 
 namespace PrimarSql.Data.Requesters
 {

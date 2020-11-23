@@ -4,13 +4,11 @@ using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
 {
-    internal sealed class DropTablePlanner : QueryPlanner
+    internal sealed class DropTablePlanner : QueryPlanner<DropTableQueryInfo>
     {
-        public string[] TargetTables { get; set; }
-        
         public override DbDataReader Execute()
         {
-            foreach (string targetTable in TargetTables)
+            foreach (string targetTable in QueryInfo.TargetTables)
             {
                 try
                 {
