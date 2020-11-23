@@ -26,9 +26,6 @@ namespace PrimarSql.Data.Planners
 
         public void AddIndexAddAction(IndexDefinition indexDefinition)
         {
-            if (indexDefinition.IsLocalIndex)
-                throw new InvalidOperationException("Cannot add local index. Local index can add when create table.");
-
             _indexActions.Add(new AddIndexAction
             {
                 IndexDefinition = indexDefinition

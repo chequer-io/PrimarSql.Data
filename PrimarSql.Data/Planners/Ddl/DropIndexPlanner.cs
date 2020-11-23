@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Providers;
@@ -11,20 +12,22 @@ namespace PrimarSql.Data.Planners
         {
             try
             {
-                QueryContext.Client.UpdateTableAsync(new UpdateTableRequest
+                var request = new UpdateTableRequest
                 {
                     TableName = QueryInfo.TableName,
-                    GlobalSecondaryIndexUpdates =
+                    GlobalSecondaryIndexUpdates = new List<GlobalSecondaryIndexUpdate>
                     {
                         new GlobalSecondaryIndexUpdate
                         {
-                            Delete =
+                            Delete = new DeleteGlobalSecondaryIndexAction
                             {
                                 IndexName = QueryInfo.TargetIndex
                             }
                         }
                     }
-                }).Wait();
+                };
+
+                QueryContext.Client.UpdateTableAsync(request).Wait();
             }
             catch (AggregateException e)
             {

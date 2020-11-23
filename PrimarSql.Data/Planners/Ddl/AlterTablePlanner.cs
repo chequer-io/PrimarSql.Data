@@ -6,7 +6,7 @@ using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
 {
-    internal sealed class AlterTablePlanner : TablePlanner<AlterTableQueryInfo>
+    internal sealed class AlterTablePlanner : QueryPlanner<AlterTableQueryInfo>
     {
         public override DbDataReader Execute()
         {
@@ -29,7 +29,7 @@ namespace PrimarSql.Data.Planners
                 request.ProvisionedThroughput = new ProvisionedThroughput(QueryInfo.ReadCapacity.Value, QueryInfo.WriteCapacity.Value);
 
             foreach (var action in QueryInfo.IndexActions)
-                action.Action(request, tableDescription);
+                action.Action(request.GlobalSecondaryIndexUpdates, tableDescription);
             
             foreach (var column in QueryInfo.TableColumns)
                 request.AttributeDefinitions.Add(new AttributeDefinition(column.ColumnName, DataTypeToScalarAttributeType(column.DataType)));

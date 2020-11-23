@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Amazon.DynamoDBv2.Model;
 
 namespace PrimarSql.Data.Planners.Index
@@ -6,9 +7,9 @@ namespace PrimarSql.Data.Planners.Index
     {
         public string IndexName { get; set; }
         
-        public override void Action(UpdateTableRequest request, TableDescription tableDescription)
+        public override void Action(List<GlobalSecondaryIndexUpdate> indexUpdates, TableDescription tableDescription)
         {
-            request.GlobalSecondaryIndexUpdates.Add(new GlobalSecondaryIndexUpdate
+            indexUpdates.Add(new GlobalSecondaryIndexUpdate
             {
                 Delete = new DeleteGlobalSecondaryIndexAction
                 {

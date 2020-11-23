@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Amazon.DynamoDBv2.Model;
 
 namespace PrimarSql.Data.Planners.Index
@@ -6,14 +8,17 @@ namespace PrimarSql.Data.Planners.Index
     {
         public IndexDefinition IndexDefinition { get; set; }
 
-        public override void Action(UpdateTableRequest request, TableDescription tableDescription)
+        public override void Action(List<GlobalSecondaryIndexUpdate> indexUpdates, TableDescription tableDescription)
         {
+            if (IndexDefinition.IsLocalIndex)
+                throw new InvalidOperationException("Cannot add local index. Local index can add when create table.");
+
             var provisionedThroughput = new ProvisionedThroughput(
                 tableDescription.ProvisionedThroughput.ReadCapacityUnits,
                 tableDescription.ProvisionedThroughput.WriteCapacityUnits
             );
             
-            request.GlobalSecondaryIndexUpdates.Add(new GlobalSecondaryIndexUpdate
+            indexUpdates.Add(new GlobalSecondaryIndexUpdate
             {
                 Create = new CreateGlobalSecondaryIndexAction
                 {

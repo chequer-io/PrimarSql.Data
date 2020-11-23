@@ -236,8 +236,7 @@ namespace PrimarSql.Data.Visitors
             switch (context.children[0])
             {
                 case CreateIndexContext createIndexContext:
-
-                    break;
+                    return VisitCreateIndexContext(createIndexContext);
 
                 case CreateTableContext createTableContext:
                     return VisitCreateTableContext(createTableContext);
@@ -254,6 +253,20 @@ namespace PrimarSql.Data.Visitors
 
             return null;
         }
+
+        #region Create Index
+        public static CreateIndexPlanner VisitCreateIndexContext(CreateIndexContext context)
+        {
+            return new CreateIndexPlanner
+            {
+                QueryInfo = new CreateIndexQueryInfo
+                {
+                    IndexDefinitionWithType = CreateIndexDefinition(context.uid(), context.indexSpec(), context.indexOption(), context.primaryKeyColumnsWithType()),
+                    TableName = VisitTableName(context.tableName())
+                }
+            };
+        }
+        #endregion
 
         #region Create Table
         public static CreateTablePlanner VisitCreateTableContext(CreateTableContext context)
@@ -315,7 +328,7 @@ namespace PrimarSql.Data.Visitors
             {
                 TableName = VisitTableName(context.tableName())
             };
-            
+
             VisitAlterSpecification(context.alterSpecification(), queryInfo);
 
             return new AlterTablePlanner
@@ -348,19 +361,19 @@ namespace PrimarSql.Data.Visitors
                         }
 
                         break;
-                    
+
                     case AlterAddIndexContext alterAddIndexContext:
                         var indexDefinition = VisitIndexColumnDefinition(alterAddIndexContext.indexColumnDefinition());
                         queryInfo.AddIndexAddAction(indexDefinition);
                         break;
-                    
+
                     case AlterIndexThroughputContext alterIndexThroughputContext:
                         if (!int.TryParse(alterIndexThroughputContext.readCapacity.GetText(), out int readCapacity))
                             throw new InvalidOperationException("Read capacity cannot be null.");
-                        
+
                         if (!int.TryParse(alterIndexThroughputContext.writeCapacity.GetText(), out int writeCapacity))
                             throw new InvalidOperationException("Write capacity cannot be null.");
-                        
+
                         var indexName = GetSinglePartName(alterIndexThroughputContext.uid().GetText(), "Index");
                         queryInfo.AddIndexAlterAction(indexName, readCapacity, writeCapacity);
                         break;
@@ -446,27 +459,56 @@ namespace PrimarSql.Data.Visitors
             };
         }
 
-        public static IndexDefinition VisitIndexColumnDefinition(IndexColumnDefinitionContext context)
+        public static IndexDefinitionWithType CreateIndexDefinition(UidContext indexName, IndexSpecContext indexSpec, IndexOptionContext indexOption, PrimaryKeyColumnsWithTypeContext primaryKeyColumnsWithTypeContext)
         {
-            var definition = new IndexDefinition();
+            var definition = CreateIndexDefinition(indexName, indexSpec, indexOption);
 
-            if (context.indexSpec() != null)
-                definition.IsLocalIndex = context.indexSpec().LOCAL() != null;
-
-            definition.IndexName = GetSinglePartName(context.uid().GetText(), "Index");
-
-            (string hashKey, string sortKey) = VisitPrimaryKeyColumns(context.primaryKeyColumns());
+            (string hashKey, string hashKeyType, string sortKey, string sortKeyType) = VisitPrimaryKeyWithTypeColumns(primaryKeyColumnsWithTypeContext);
 
             definition.HashKey = hashKey;
             definition.SortKey = sortKey;
 
-            if (context.indexOption() != null)
-                definition.IndexType = VisitIndexOption(context.indexOption());
+            return new IndexDefinitionWithType
+            {
+                IndexDefinition = definition,
+                HashKeyType = hashKeyType,
+                SortKeyType = sortKeyType,
+            };
+        }
 
-            if (definition.IndexType == IndexType.Include)
-                definition.IncludeColumns = VisitIndexOptionToGetIncludeColumns(context.indexOption());
+        public static IndexDefinition CreateIndexDefinition(UidContext indexName, IndexSpecContext indexSpec, IndexOptionContext indexOption, PrimaryKeyColumnsContext primaryKeyColumns)
+        {
+            var definition = CreateIndexDefinition(indexName, indexSpec, indexOption);
+
+            (string hashKey, string sortKey) = VisitPrimaryKeyColumns(primaryKeyColumns);
+
+            definition.HashKey = hashKey;
+            definition.SortKey = sortKey;
 
             return definition;
+        }
+
+        public static IndexDefinition CreateIndexDefinition(UidContext indexName, IndexSpecContext indexSpec, IndexOptionContext indexOption)
+        {
+            var definition = new IndexDefinition();
+
+            if (indexSpec != null)
+                definition.IsLocalIndex = indexSpec.LOCAL() != null;
+
+            definition.IndexName = GetSinglePartName(indexName.GetText(), "Index");
+
+            if (indexOption != null)
+                definition.IndexType = VisitIndexOption(indexOption);
+
+            if (definition.IndexType == IndexType.Include)
+                definition.IncludeColumns = VisitIndexOptionToGetIncludeColumns(indexOption);
+
+            return definition;
+        }
+
+        public static IndexDefinition VisitIndexColumnDefinition(IndexColumnDefinitionContext context)
+        {
+            return CreateIndexDefinition(context.uid(), context.indexSpec(), context.indexOption(), context.primaryKeyColumns());
         }
 
         public static IndexType VisitIndexOption(IndexOptionContext context)
@@ -502,7 +544,7 @@ namespace PrimarSql.Data.Visitors
 
             return dropIndexPlanner;
         }
-        
+
         public static DropTablePlanner VisitDropTableContext(DropTableContext context)
         {
             IEnumerable<string> targetTables = context.tableName().Select(VisitTableName);
@@ -518,6 +560,12 @@ namespace PrimarSql.Data.Visitors
         public static (string hashKey, string sortKey) VisitPrimaryKeyColumns(PrimaryKeyColumnsContext context)
         {
             return (context.hashKey?.GetText(), context.sortKey?.GetText());
+        }
+
+        public static (string hashKey, string hashKeyType, string sortKey, string sortKeyType) VisitPrimaryKeyWithTypeColumns(PrimaryKeyColumnsWithTypeContext context)
+        {
+            return (context.hashKey?.GetText(), context.hashKeyType?.GetText(),
+                context.sortKey?.GetText(), context.sortKeyType?.GetText());
         }
 
         public static string VisitTableName(TableNameContext context)

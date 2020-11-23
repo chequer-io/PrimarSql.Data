@@ -9,7 +9,7 @@ using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
 {
-    internal sealed class CreateTablePlanner : TablePlanner<CreateTableQueryInfo>
+    internal sealed class CreateTablePlanner : QueryPlanner<CreateTableQueryInfo>
     {
         private const int DefaultCapacity = 10;
 
