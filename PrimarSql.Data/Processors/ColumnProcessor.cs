@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
+using System.Text;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Models.Columns;
@@ -25,9 +26,7 @@ namespace PrimarSql.Data.Processors
 
             foreach (var column in columns)
             {
-                string name = string.IsNullOrEmpty(column.Alias) ?
-                    string.Join(".", column.Name.Select(n => $"`{n}`")) :
-                    column.Alias;
+                string name = string.IsNullOrEmpty(column.Alias) ? ConverToName(column.Name) : column.Alias;
 
                 _schemaTable.Rows.Add(name, 0, typeof(object), column.Name, false);
             }
@@ -38,33 +37,68 @@ namespace PrimarSql.Data.Processors
             return _schemaTable;
         }
 
-        private string BuildPath(IEnumerable<IPart> obj)
-        {
-            return string.Join("", obj.Select(o =>
-            {
-                switch (o)
-                {
-                    case IdentifierPart identifierPart:
-                        return $"['{identifierPart.Identifier}']";
-
-                    case IndexPart indexPart:
-                        return $"[{indexPart.Index}]";
-                }
-
-                return string.Empty;
-            }));
-        }
-
         public override JToken[] Process(Dictionary<string, AttributeValue> row)
         {
             var jObject = row.ToJObject();
 
-            return _schemaTable.Rows.Cast<DataRow>().Select(dataRow =>
-            {
-                var name = "$" + BuildPath((IPart[])dataRow["path"]);
+            return _schemaTable.Rows
+                .Cast<DataRow>()
+                .Select(dataRow => SelectToken(jObject, (IPart[])dataRow["path"])).ToArray();
+        }
 
-                return jObject.SelectToken(name);
-            }).ToArray();
+        private string ConverToName(IEnumerable<IPart> parts)
+        {
+            var sb = new StringBuilder();
+
+            foreach (var part in parts)
+            {
+                switch (part)
+                {
+                    case IdentifierPart identifierPart:
+                    {
+                        if (sb.Length != 0)
+                            sb.Append(".");
+
+                        sb.Append($"'{identifierPart.Identifier.Replace("'", "''")}'");
+                        break;
+                    }
+
+                    case IndexPart indexPart:
+                    {
+                        sb.Append($"[{indexPart.Index}]");
+                        break;
+                    }
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        private JToken SelectToken(JToken token, IEnumerable<IPart> parts)
+        {
+            var currentToken = token;
+
+            foreach (var part in parts)
+            {
+                switch (part)
+                {
+                    case IdentifierPart identifierPart when currentToken is JObject jObject:
+                        currentToken = jObject[identifierPart.Identifier];
+                        break;
+
+                    case IndexPart indexPart when currentToken is JArray jArray:
+                        currentToken = jArray[indexPart.Index];
+                        break;
+
+                    default:
+                        return null;
+                }
+
+                if (currentToken == null)
+                    return null;
+            }
+
+            return currentToken;
         }
     }
 }
