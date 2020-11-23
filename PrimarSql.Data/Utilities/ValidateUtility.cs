@@ -5,15 +5,15 @@ namespace PrimarSql.Data.Utilities
 {
     internal static class ValidateUtility
     {
-        public static void ValidateTableName(IPart[] values)
+        public static void ValidateSingleName(IPart[] values, string nameType)
         {
             if (values.Length == 0)
-                throw new InvalidOperationException("Empty Table name.");
+                throw new InvalidOperationException($"Empty {nameType} name.");
 
             if (values.Length > 1)
-                throw new InvalidOperationException("Table name should be single identifier");
+                throw new InvalidOperationException($"{nameType} name should be single identifier");
         }
-        
+
         public static void ValidateTableWithIndexName(IPart[] values)
         {
             if (values.Length == 0)

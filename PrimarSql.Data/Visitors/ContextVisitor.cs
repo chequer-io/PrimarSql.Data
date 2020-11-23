@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Planners;
+using PrimarSql.Data.Planners.Index;
+using PrimarSql.Data.Planners.Table;
 using PrimarSql.Data.Sources;
 using PrimarSql.Data.Utilities;
 using static PrimarSql.Internal.PrimarSqlParser;
@@ -12,12 +14,12 @@ namespace PrimarSql.Data.Visitors
 {
     internal static class ContextVisitor
     {
-        public static QueryPlanner Visit(RootContext context)
+        public static IQueryPlanner Visit(RootContext context)
         {
             return VisitSqlStatement(context.sqlStatement());
         }
 
-        public static QueryPlanner VisitSqlStatement(SqlStatementContext context)
+        public static IQueryPlanner VisitSqlStatement(SqlStatementContext context)
         {
             if (context.dmlStatement() != null)
                 return VisitDmlStatementContext(context.dmlStatement());
@@ -33,7 +35,7 @@ namespace PrimarSql.Data.Visitors
         }
 
         #region DML Statement
-        public static QueryPlanner VisitDmlStatementContext(DmlStatementContext context)
+        public static IQueryPlanner VisitDmlStatementContext(DmlStatementContext context)
         {
             if (context.children.Count == 0)
                 return null;
@@ -224,7 +226,7 @@ namespace PrimarSql.Data.Visitors
         }
         #endregion
 
-        public static QueryPlanner VisitDdlStatementContext(DdlStatementContext context)
+        public static IQueryPlanner VisitDdlStatementContext(DdlStatementContext context)
         {
             if (context.children.Count == 0)
                 return null;
@@ -236,8 +238,7 @@ namespace PrimarSql.Data.Visitors
                     break;
 
                 case CreateTableContext createTableContext:
-
-                    break;
+                    return VisitCreateTableContext(createTableContext);
 
                 case AlterTableContext alterTableContext:
 
@@ -253,20 +254,245 @@ namespace PrimarSql.Data.Visitors
             return null;
         }
 
+        public static CreateTablePlanner VisitCreateTableContext(CreateTableContext context)
+        {
+            var queryInfo = new CreateTableQueryInfo
+            {
+                TableName = VisitTableName(context.tableName()),
+                SkipIfExists = context.ifNotExists() != null
+            };
+
+            VisitCreateDefinitions(context.createDefinitions(), queryInfo);
+
+            foreach (var tableOption in context.tableOption())
+                VisitTableOption(tableOption, queryInfo);
+
+            var planner = new CreateTablePlanner
+            {
+                QueryInfo = queryInfo
+            };
+
+            return planner;
+        }
+
+        public static void VisitCreateDefinitions(CreateDefinitionsContext context, CreateTableQueryInfo queryInfo)
+        {
+            var columns = new Dictionary<string, TableColumn>();
+            var constraints = new Dictionary<string, bool?>();
+            var indexes = new Dictionary<string, IndexDefinition>();
+
+            foreach (var definition in context.createDefinition())
+            {
+                switch (definition)
+                {
+                    case ColumnDeclarationContext columnDeclarationContext:
+                    {
+                        var tableColumn = VisitColumnDeclaration(columnDeclarationContext);
+
+                        if (columns.ContainsKey(tableColumn.ColumnName))
+                            throw new InvalidOperationException($"Column name {tableColumn.ColumnName} duplicate.");
+
+                        columns[tableColumn.ColumnName] = tableColumn;
+                        break;
+                    }
+
+                    case ConstraintDeclarationContext constraintDeclarationContext:
+                    {
+                        (string columnName, bool? isHashKey) = VisitTableConstraint(constraintDeclarationContext.tableConstraint());
+
+                        if (constraints.ContainsKey(columnName))
+                            throw new InvalidOperationException($"Column name {columnName} duplicate.");
+
+                        constraints[columnName] = isHashKey;
+                        break;
+                    }
+
+                    case IndexDeclarationContext indexColumnDefinitionContext:
+                    {
+                        var indexDefinition = VisitIndexColumnDefinition(indexColumnDefinitionContext.indexColumnDefinition());
+
+                        if (indexes.ContainsKey(indexDefinition.IndexName))
+                            throw new InvalidOperationException($"Index name {indexDefinition.IndexName} duplicate.");
+
+                        indexes[indexDefinition.IndexName] = indexDefinition;
+                        break;
+                    }
+                }
+            }
+
+            // Column constraint validation
+            foreach ((var columnName, bool? isHashKey) in constraints)
+            {
+                if (!columns.ContainsKey(columnName))
+                    throw new InvalidOperationException($"Column name {columnName} not defined.");
+
+                var tableColumn = columns[columnName];
+
+                if (tableColumn.IsHashKey || tableColumn.IsSortKey)
+                    throw new InvalidOperationException($"Already {columnName} constraint is defined.");
+
+                tableColumn.IsHashKey = isHashKey ?? false;
+                tableColumn.IsSortKey = !isHashKey ?? false;
+            }
+
+            // Index columns validation
+            foreach ((string indexName, var indexDefinition) in indexes)
+            {
+                if (!columns.ContainsKey(indexDefinition.HashKey) || (!string.IsNullOrWhiteSpace(indexDefinition.SortKey) && !columns.ContainsKey(indexDefinition.SortKey)))
+                    throw new InvalidOperationException($"{indexName} use not defined column name.");
+            }
+
+            queryInfo.TableColumns = columns.Select(kv => kv.Value).ToArray();
+            queryInfo.IndexDefinitions = indexes.Select(kv => kv.Value).ToArray();
+            
+            // HashKey, SortKey Validation         
+            
+            if (queryInfo.TableColumns.Count(column => column.IsHashKey) != 1)
+                throw new InvalidOperationException($"No hash key defined for Table {queryInfo.TableName}.");
+            
+            if (queryInfo.TableColumns.Count(column => column.IsSortKey) > 1)
+                throw new InvalidOperationException($"Too many sort key defined for Table {queryInfo.TableName}.");
+        }
+
+        public static void VisitTableOption(TableOptionContext context, CreateTableQueryInfo queryInfo)
+        {
+            switch (context)
+            {
+                case TableOptionThroughputContext tableOptionThroughputContext:
+                    if (int.TryParse(tableOptionThroughputContext.readCapacity.GetText(), out int readCapacity))
+                        queryInfo.ReadCapacity = readCapacity;
+
+                    if (int.TryParse(tableOptionThroughputContext.writeCapacity.GetText(), out int writeCapacity))
+                        queryInfo.WriteCapacity = writeCapacity;
+
+                    break;
+
+                case TableBillingModeContext tableBillingModeContext:
+                    if (tableBillingModeContext.PROVISIONED() != null)
+                        queryInfo.TableBillingMode = TableBillingMode.Provisoned;
+
+                    if (tableBillingModeContext.PAY_PER_REQUEST() != null)
+                        queryInfo.TableBillingMode = TableBillingMode.PayPerRequest;
+
+                    if (tableBillingModeContext.ON_DEMAND() != null)
+                        queryInfo.TableBillingMode = TableBillingMode.PayPerRequest;
+
+                    break;
+            }
+        }
+
+        public static TableColumn VisitColumnDeclaration(ColumnDeclarationContext context)
+        {
+            var columnName = GetSinglePartName(context.uid().GetText(), "Column");
+            (string dataType, bool? isHashKey) = VisitColumnDefinition(context.columnDefinition());
+
+            return new TableColumn
+            {
+                ColumnName = columnName,
+                DataType = dataType,
+                IsHashKey = isHashKey ?? false,
+                IsSortKey = !isHashKey ?? false,
+            };
+        }
+
+        public static (string dataType, bool? isHashKey) VisitColumnDefinition(ColumnDefinitionContext context)
+        {
+            bool? isHashKey = null;
+
+            if (context.columnConstraint() != null)
+                isHashKey = IsHashKey(context.columnConstraint());
+
+            return (context.dataType().GetText(), isHashKey);
+        }
+
+        public static (string name, bool? isHashKey) VisitTableConstraint(TableConstraintContext context)
+        {
+            var columnName = GetSinglePartName(context.uid().GetText(), "Column");
+
+            return (columnName, IsHashKey(context.columnConstraint()));
+        }
+
+        public static bool IsHashKey(ColumnConstraintContext context)
+        {
+            return context switch
+            {
+                HashKeyColumnConstraintContext _ => true,
+                RangeKeyColumnConstraintContext _ => false,
+                _ => throw new NotSupportedException($"Not Supported Column constraint {context?.GetType().Name ?? "Unknown Context"}.")
+            };
+        }
+
+        public static IndexDefinition VisitIndexColumnDefinition(IndexColumnDefinitionContext context)
+        {
+            var definition = new IndexDefinition();
+
+            if (context.indexSpec() != null)
+                definition.IsLocalIndex = context.indexSpec().LOCAL() != null;
+
+            definition.IndexName = GetSinglePartName(context.uid().GetText(), "Index");
+
+            (string hashKey, string sortKey) = VisitPrimaryKeyColumns(context.primaryKeyColumns());
+
+            definition.HashKey = hashKey;
+            definition.SortKey = sortKey;
+
+            definition.IndexType = VisitIndexOption(context.indexOption());
+
+            if (definition.IndexType == IndexType.Include)
+                definition.IncludeColumns = VisitIndexOptionToGetIncludeColumns(context.indexOption());
+
+            return definition;
+        }
+
+        public static IndexType VisitIndexOption(IndexOptionContext context)
+        {
+            if (context.ALL() != null)
+                return IndexType.All;
+
+            if (context.KEYS() != null && context.ONLY() != null)
+                return IndexType.KeysOnly;
+
+            if (context.INCLUDE() != null)
+                return IndexType.Include;
+
+            throw new NotSupportedException($"Not supported {context.GetText()} index type.");
+        }
+
+        public static string[] VisitIndexOptionToGetIncludeColumns(IndexOptionContext context)
+        {
+            return context.uid()
+                .Select(id => GetSinglePartName(id.GetText(), "Column"))
+                .ToArray();
+        }
+
         public static DropTablePlanner VisitDropTableContext(DropTableContext context)
         {
+            IEnumerable<string> targetTables = context.tableName().Select(VisitTableName);
+
             var dropTablePlanner = new DropTablePlanner
             {
-                TargetTables = context.tableName().Select(tableName =>
-                {
-                    IPart[] result = IdentifierUtility.Parse(tableName.GetText());
-                    ValidateTableName(result);
-
-                    return result.FirstOrDefault()?.ToString();
-                }).ToArray()
+                QueryInfo = new DropTableQueryInfo(targetTables)
             };
 
             return dropTablePlanner;
+        }
+
+        public static (string hashKey, string sortKey) VisitPrimaryKeyColumns(PrimaryKeyColumnsContext context)
+        {
+            return (context.hashKey?.GetText(), context.sortKey?.GetText());
+        }
+
+        public static string VisitTableName(TableNameContext context)
+        {
+            return GetSinglePartName(context.GetText(), "Table");
+        }
+
+        public static string GetSinglePartName(string text, string nameType)
+        {
+            IPart[] parts = IdentifierUtility.Parse(text);
+            ValidateSingleName(parts, nameType);
+
+            return parts.FirstOrDefault()?.ToString();
         }
     }
 }
