@@ -241,8 +241,7 @@ namespace PrimarSql.Data.Visitors
                     return VisitCreateTableContext(createTableContext);
 
                 case AlterTableContext alterTableContext:
-
-                    break;
+                    return VisitAlterTableContext(alterTableContext);
 
                 case DropIndexContext dropIndexContext:
                     break;
@@ -254,6 +253,7 @@ namespace PrimarSql.Data.Visitors
             return null;
         }
 
+        #region Create Table
         public static CreateTablePlanner VisitCreateTableContext(CreateTableContext context)
         {
             var queryInfo = new CreateTableQueryInfo
@@ -344,15 +344,28 @@ namespace PrimarSql.Data.Visitors
 
             queryInfo.TableColumns = columns.Select(kv => kv.Value).ToArray();
             queryInfo.IndexDefinitions = indexes.Select(kv => kv.Value).ToArray();
-            
+
             // HashKey, SortKey Validation         
-            
+
             if (queryInfo.TableColumns.Count(column => column.IsHashKey) != 1)
                 throw new InvalidOperationException($"No hash key defined for Table {queryInfo.TableName}.");
-            
+
             if (queryInfo.TableColumns.Count(column => column.IsSortKey) > 1)
                 throw new InvalidOperationException($"Too many sort key defined for Table {queryInfo.TableName}.");
         }
+        #endregion
+
+        #region Alter Table
+        public static AlterTablePlanner VisitAlterTableContext(AlterTableContext context)
+        {
+            var queryInfo = new AlterTableQueryInfo();
+
+            return new AlterTablePlanner
+            {
+                QueryInfo = queryInfo
+            };
+        }
+        #endregion
 
         public static void VisitTableOption(TableOptionContext context, CreateTableQueryInfo queryInfo)
         {
