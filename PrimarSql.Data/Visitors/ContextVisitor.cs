@@ -21,17 +21,22 @@ namespace PrimarSql.Data.Visitors
 
         public static IQueryPlanner VisitSqlStatement(SqlStatementContext context)
         {
+            if (context == null)
+                return null;
+
             if (context.dmlStatement() != null)
                 return VisitDmlStatementContext(context.dmlStatement());
 
             if (context.ddlStatement() != null)
                 return VisitDdlStatementContext(context.ddlStatement());
 
-            // describe
+            if (context.describeStatement() != null)
+                return VisitDescribeStatementContext(context.describeStatement());
 
-            // show
+            if (context.showStatement() != null)
+                return VisitShowStatementContext(context.showStatement());
 
-            return null;
+            throw new NotSupportedException($"Not Supported Statement. (Name: {context.GetType().Name[..^7]})");
         }
 
         #region DML Statement
@@ -45,10 +50,7 @@ namespace PrimarSql.Data.Visitors
                 case SelectStatementContext selectStatementContext:
                     return new SelectQueryPlanner(VisitSelectStatement(selectStatementContext));
 
-                    ;
-
                 case InsertStatementContext insertStatementContext:
-
                     break;
 
                 case UpdateStatementContext updateStatementContext:
@@ -506,6 +508,47 @@ namespace PrimarSql.Data.Visitors
             ValidateSingleName(parts, nameType);
 
             return parts.FirstOrDefault()?.ToString();
+        }
+
+        public static IQueryPlanner VisitDescribeStatementContext(DescribeStatementContext context)
+        {
+            return VisitDescribeSpecificationContext(context.describeSpecification());
+        }
+
+        public static IQueryPlanner VisitDescribeSpecificationContext(DescribeSpecificationContext context)
+        {
+            switch (context)
+            {
+                case DescribeTableContext describeTableContext:
+                    break;
+
+                case DescribeLimitsContext describeLimitsContext:
+                    break;
+
+                case DescribeEndPointsContext describeEndPointsContext:
+                    break;
+            }
+
+            return null;
+        }
+
+        public static IQueryPlanner VisitShowStatementContext(ShowStatementContext context)
+        {
+            return VisitShowSpecification(context.showSpecification());
+        }
+
+        public static IQueryPlanner VisitShowSpecification(ShowSpecificationContext context)
+        {
+            switch (context)
+            {
+                case ShowTablesContext showTablesContext:
+                    break;
+
+                case ShowIndexesContext showIndexesContext:
+                    break;
+            }
+
+            return null;
         }
     }
 }
