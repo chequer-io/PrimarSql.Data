@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Planners.Table
 {
-    public class TableColumn
+    internal class TableColumn
     {
         public string ColumnName { get; set; }
         

@@ -2,7 +2,6 @@
 using System.Linq;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models;
-using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Utilities;
 using static PrimarSql.Internal.PrimarSqlParser;
 
@@ -86,10 +85,7 @@ namespace PrimarSql.Data.Visitors
 
             if (context.selectStatement() != null)
             {
-                sources = new SelectExpression
-                {
-                    SelectQueryInfo = ContextVisitor.VisitSelectStatement(context.selectStatement())
-                };
+                sources = new SelectExpression(ContextVisitor.VisitSelectStatement(context.selectStatement()));
             }
 
             if (context.expressions() != null)
@@ -160,24 +156,15 @@ namespace PrimarSql.Data.Visitors
                 case ExistsExpressionAtomContext existsExpressionAtomContext:
                     return new FunctionExpression
                     {
-                        Member = new MemberExpression
-                        {
-                            Name = new IPart[] { new IdentifierPart("EXISTS") }
-                        },
+                        Member = VisitorHelper.GetMemberByName("EXISTS"),
                         Parameters = new IExpression[]
                         {
-                            new SelectExpression
-                            {
-                                SelectQueryInfo = ContextVisitor.VisitSelectStatement(existsExpressionAtomContext.selectStatement())
-                            }
+                            new SelectExpression(ContextVisitor.VisitSelectStatement(existsExpressionAtomContext.selectStatement()))
                         }
                     };
 
                 case SubqueryExpressionAtomContext subqueryExpressionAtomContext:
-                    return new SelectExpression
-                    {
-                        SelectQueryInfo = ContextVisitor.VisitSelectStatement(subqueryExpressionAtomContext.selectStatement())
-                    };
+                    return new SelectExpression(ContextVisitor.VisitSelectStatement(subqueryExpressionAtomContext.selectStatement()));
 
                 case BitExpressionAtomContext bitExpressionAtomContext:
                     return new LogicalExpression
@@ -242,11 +229,7 @@ namespace PrimarSql.Data.Visitors
             switch (context)
             {
                 case StringLiteralConstantContext stringLiteralConstantContext:
-                    return new LiteralExpression
-                    {
-                        Value = IdentifierUtility.Unescape(stringLiteralConstantContext.stringLiteral().GetText()),
-                        ValueType = LiteralValueType.String
-                    };
+                    return VisitStringLiteral(stringLiteralConstantContext.stringLiteral());
 
                 case PositiveDecimalLiteralConstantContext positiveDecimalLiteralConstantContext:
                     return new LiteralExpression
@@ -273,6 +256,15 @@ namespace PrimarSql.Data.Visitors
             return null;
         }
 
+        public static LiteralExpression VisitStringLiteral(StringLiteralContext context)
+        {
+            return new LiteralExpression
+            {
+                Value = IdentifierUtility.Unescape(context.GetText()),
+                ValueType = LiteralValueType.String
+            };
+        }
+
         public static MultipleExpression VisitExpressions(ExpressionsContext context)
         {
             return new MultipleExpression
@@ -283,9 +275,14 @@ namespace PrimarSql.Data.Visitors
 
         public static MemberExpression VisitFullColumnNameExpressionAtom(FullColumnNameExpressionAtomContext context)
         {
+            return VisitFullColumnName(context.fullColumnName());
+        }
+
+        public static MemberExpression VisitFullColumnName(FullColumnNameContext context)
+        {
             return new MemberExpression
             {
-                Name = IdentifierUtility.Parse(context.fullColumnName().GetText())
+                Name = IdentifierUtility.Parse(context.GetText())
             };
         }
 
@@ -303,7 +300,7 @@ namespace PrimarSql.Data.Visitors
         public static FunctionExpression VisitBuiltInFunctionCall(BuiltInFunctionCallContext context)
         {
             // TODO: Implement
-            return null;
+            throw new NotSupportedException("Not supported built-in functions yet.");
         }
 
         public static FunctionExpression VisitNativeFunctionCall(NativeFunctionCallContext context)
@@ -312,7 +309,7 @@ namespace PrimarSql.Data.Visitors
             {
                 case UpdateItemFunctionCallContext updateItemFunctionCallContext:
                     return VisitUpdateItemFunction(updateItemFunctionCallContext.updateItemFunction());
-                
+
                 case ConditionExpressionFunctionCallContext conditionExpressionFunctionCallContext:
                     return VisitConditionExpressionFunction(conditionExpressionFunctionCallContext.conditionExpressionFunction());
             }
@@ -320,12 +317,21 @@ namespace PrimarSql.Data.Visitors
             return null;
         }
 
+        // native function for update-item
         public static FunctionExpression VisitUpdateItemFunction(UpdateItemFunctionContext context)
         {
             switch (context)
             {
                 case IfNotExistsFunctionCallContext ifNotExistsFunctionCallContext:
-                    break;
+                    return new FunctionExpression
+                    {
+                        Member = VisitorHelper.GetMemberByName("IF_NOT_EXISTS"),
+                        Parameters = new IExpression[]
+                        {
+                            VisitFullColumnName(ifNotExistsFunctionCallContext.fullColumnName()),
+                            VisitConstant(ifNotExistsFunctionCallContext.constant())
+                        }
+                    };
             }
 
             return null;
@@ -336,21 +342,75 @@ namespace PrimarSql.Data.Visitors
             switch (context)
             {
                 case AttributeExistsFunctionCallContext attributeExistsFunctionCallContext:
-                    break;
+                    return new FunctionExpression
+                    {
+                        Member = VisitorHelper.GetMemberByName("ATTRIBUTE_EXISTS"),
+                        Parameters = new IExpression[]
+                        {
+                            VisitFullColumnName(attributeExistsFunctionCallContext.fullColumnName()),
+                        }
+                    };
 
                 case AttributeNotExistsFunctionCallContext attributeNotExistsFunctionCallContext:
-                    break;
+                    return new FunctionExpression
+                    {
+                        Member = VisitorHelper.GetMemberByName("ATTRIBUTE_NOT_EXISTS"),
+                        Parameters = new IExpression[]
+                        {
+                            VisitFullColumnName(attributeNotExistsFunctionCallContext.fullColumnName()),
+                        }
+                    };
 
                 case AttributeTypeFunctionCallContext attributeTypeFunctionCallContext:
-                    break;
-                
+                    return new FunctionExpression
+                    {
+                        Member = VisitorHelper.GetMemberByName("ATTRIBUTE_TYPE"),
+                        Parameters = new IExpression[]
+                        {
+                            VisitFullColumnName(attributeTypeFunctionCallContext.fullColumnName()),
+                            new LiteralExpression
+                            {
+                                Value = VisitorHelper.DataTypeToDynamoDBType(attributeTypeFunctionCallContext.dataType().GetText()),
+                                ValueType = LiteralValueType.String
+                            }
+                        }
+                    };
+
                 case BeginsWithFunctionCallContext beginsWithFunctionCallContext:
-                    break;
+                    return new FunctionExpression
+                    {
+                        Member = VisitorHelper.GetMemberByName("BEGINS_WITH"),
+                        Parameters = new IExpression[]
+                        {
+                            VisitFullColumnName(beginsWithFunctionCallContext.fullColumnName()),
+                            VisitStringLiteral(beginsWithFunctionCallContext.stringLiteral())
+                        }
+                    };
+
+                case ContainsFunctionCallContext containsFunctionCallContext:
+                    return new FunctionExpression
+                    {
+                        Member = VisitorHelper.GetMemberByName("CONTAINS"),
+                        Parameters = new IExpression[]
+                        {
+                            VisitFullColumnName(containsFunctionCallContext.fullColumnName()),
+                            VisitStringLiteral(containsFunctionCallContext.stringLiteral())
+                        }
+                    };
+
+                case SizeFunctionCallContext sizeFunctionCallContext:
+                    return new FunctionExpression
+                    {
+                        Member = VisitorHelper.GetMemberByName("SIZE"),
+                        Parameters = new IExpression[]
+                        {
+                            VisitFullColumnName(sizeFunctionCallContext.fullColumnName())
+                        }
+                    };
             }
 
             return null;
         }
-
 
         public static IExpression VisitNestedExpressionAtom(NestedExpressionAtomContext context)
         {

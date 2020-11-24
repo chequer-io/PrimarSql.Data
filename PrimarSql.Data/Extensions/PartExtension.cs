@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using PrimarSql.Data.Models.Columns;
 
 namespace PrimarSql.Data.Extensions
@@ -19,7 +20,11 @@ namespace PrimarSql.Data.Extensions
                         if (sb.Length != 0)
                             sb.Append(".");
 
-                        sb.Append($"'{identifierPart.Identifier.Replace("'", "''")}'");
+                        var identifier = identifierPart.Identifier;
+                        var needEscape = !Regex.IsMatch(identifier, @"[a-z_$0-9]*?[a-z_$]+?[a-z_$0-9]*", RegexOptions.IgnoreCase);
+
+                        sb.Append(needEscape ? $"'{identifier.Replace("'", "''")}'" : identifier);
+
                         break;
                     }
 

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace PrimarSql.Data.Planners
 {
-    public class DropTableQueryInfo : IQueryInfo
+    internal sealed class DropTableQueryInfo : IQueryInfo
     {
         public IEnumerable<string> TargetTables { get; }
 

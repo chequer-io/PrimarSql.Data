@@ -178,10 +178,10 @@ namespace PrimarSql.Data.Visitors
                         Alias = IdentifierUtility.Unescape(selectColumnElementContext.alias?.GetText()),
                     };
 
-                case SelectFunctionElementContext selectFunctionElementContext:
+                case SelectFunctionElementContext _:
                     throw new NotSupportedException("Not Supported Select Element Function Feature.");
 
-                case SelectExpressionElementContext selectExpressionElementContext:
+                case SelectExpressionElementContext _:
                     throw new NotSupportedException("Not Supported Select Element Expression Feature.");
             }
 

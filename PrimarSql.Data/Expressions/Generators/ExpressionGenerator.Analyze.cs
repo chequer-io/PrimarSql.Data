@@ -16,7 +16,7 @@ namespace PrimarSql.Data.Expressions.Generators
         {
             if (expression == null)
                 return null;
-            
+
             switch (expression)
             {
                 case MultipleExpression multipleExpression:
@@ -34,11 +34,14 @@ namespace PrimarSql.Data.Expressions.Generators
                 case MemberExpression columnExpression:
                     return AnalyzeColumnExpression(columnExpression, parent, depth);
 
+                case FunctionExpression functionExpression:
+                    return AnalyzeFunctionExpression(functionExpression, parent, depth);
+
                 case SelectExpression selectExpression:
                     throw new NotSupportedException("Not Supported Subquery Expression Feature.");
             }
 
-            throw new NotSupportedException($"Not Supported {expression?.GetType().Name ?? "Unknown Type"}.");
+            throw new NotSupportedException($"Not Supported {expression.GetType().Name}.");
         }
 
         #region MultipleExpression
@@ -136,8 +139,24 @@ namespace PrimarSql.Data.Expressions.Generators
         {
             if (parent == null)
                 throw new InvalidOperationException("Literal value cannot be used alone.");
+
+            var columnName = Context.GetAttributeName(expression.Name.ToName());
             
-            return new StringCondition(string.Join(".", expression.Name.ToName()));
+            return new StringCondition(columnName.Key);
+        }
+        #endregion
+
+        #region Function
+        private FunctionCondition AnalyzeFunctionExpression(FunctionExpression expression, IExpression parent, int depth)
+        {
+            if (!(expression.Member is MemberExpression memberExpression))
+                throw new InvalidOperationException("Function member should be MemberExpression.");
+
+            return new FunctionCondition
+            {
+                MemberName = memberExpression.Name.ToName(),
+                Parameters = expression.Parameters.Select(p => AnalyzeInternal(p, expression, depth + 1)).ToArray()
+            };
         }
         #endregion
 
@@ -184,7 +203,7 @@ namespace PrimarSql.Data.Expressions.Generators
             Context.Enter(attrValue);
 
             sortKeyCondition = Context.AddSortKeyCondition(attrName, attrValue, null, @operator, SortKeyType.Comparison);
-            
+
             return true;
         }
         #endregion
