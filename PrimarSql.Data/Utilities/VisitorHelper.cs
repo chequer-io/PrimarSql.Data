@@ -6,6 +6,16 @@ namespace PrimarSql.Data.Utilities
 {
     internal static class VisitorHelper
     {
+        public static readonly string[] StringTypes =
+        {
+            "varchar", "text", "mediumtext", "longtext", "string"
+        };
+
+        public static readonly string[] NumberTypes =
+        {
+            "int", "integer", "bigint"
+        };
+
         public static MemberExpression GetMemberByName(string name)
         {
             return new MemberExpression

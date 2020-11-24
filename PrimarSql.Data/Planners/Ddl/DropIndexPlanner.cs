@@ -32,7 +32,7 @@ namespace PrimarSql.Data.Planners
             catch (AggregateException e)
             {
                 var innerException = e.InnerExceptions[0];
-                throw new Exception($"Error while Drop index '{QueryInfo.TableName}.{QueryInfo.TargetIndex}'{Environment.NewLine}{innerException.Message}");
+                throw new Exception($"Error while drop index '{QueryInfo.TableName}.{QueryInfo.TargetIndex}'{Environment.NewLine}{innerException.Message}");
             }
 
             return new PrimarSqlDataReader(new EmptyDataProvider());

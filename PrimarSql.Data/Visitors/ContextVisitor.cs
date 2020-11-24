@@ -59,7 +59,7 @@ namespace PrimarSql.Data.Visitors
                     return new UpdatePlanner(VisitUpdateStatement(updateStatementContext));
 
                 case DeleteStatementContext deleteStatementContext:
-                    break;
+                    return new DeletePlanner(VisitDeleteStatement(deleteStatementContext));
             }
 
             return null;
@@ -306,6 +306,29 @@ namespace PrimarSql.Data.Visitors
             var expression = ExpressionVisitor.VisitExpression(context.expression());
 
             return (columnName.Name, expression);
+        }
+        #endregion
+
+        #region DeleteExpression
+        public static DeleteQueryInfo VisitDeleteStatement(DeleteStatementContext context)
+        {
+            var queryInfo = new DeleteQueryInfo
+            {
+                TableName = VisitTableName(context.tableName()),
+                WhereExpression = context.expression() != null ?
+                    ExpressionVisitor.VisitExpression(context.expression())
+                    : null
+            };
+
+            if (context.limitClause() != null)
+            {
+                var limitClause = context.limitClause();
+
+                if (int.TryParse(limitClause.limit.GetText(), out int limit))
+                    queryInfo.Limit = limit;
+            }
+
+            return queryInfo;
         }
         #endregion
         #endregion

@@ -9,9 +9,8 @@ namespace PrimarSql.Data.Planners
         {
         }
         
-        public SelectPlanner(SelectQueryInfo queryInfo)
+        public SelectPlanner(SelectQueryInfo queryInfo) : base(queryInfo)
         {
-            QueryInfo = queryInfo;
         }
         
         public override DbDataReader Execute()

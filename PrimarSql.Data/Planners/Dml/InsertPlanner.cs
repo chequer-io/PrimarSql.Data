@@ -6,7 +6,6 @@ using System.Text;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Expressions;
-using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Providers;
 
@@ -14,9 +13,6 @@ namespace PrimarSql.Data.Planners
 {
     internal sealed class InsertPlanner : QueryPlanner<InsertQueryInfo>
     {
-        private readonly Dictionary<string, string> _expressionAttributeNames;
-        private readonly Dictionary<string, AttributeValue> _expressionAttributeValues;
-        private readonly ExpressionAttributeGenerator _attributeGenerator;
         private string _hashKeyName = string.Empty;
         private string _sortKeyName = string.Empty;
         private AttributeValue _hashKeyValue;
@@ -24,30 +20,10 @@ namespace PrimarSql.Data.Planners
         private PutItemRequest _request;
         private int _insertCount;
         
-        public InsertPlanner(InsertQueryInfo queryInfo)
+        public InsertPlanner(InsertQueryInfo queryInfo) : base(queryInfo)
         {
-            _expressionAttributeNames = new Dictionary<string, string>();
-            _expressionAttributeValues = new Dictionary<string, AttributeValue>();
-            _attributeGenerator = new ExpressionAttributeGenerator();
-            QueryInfo = queryInfo;
         }
 
-        private string GetAttributeName(string rawName)
-        {
-            var attributeName = _attributeGenerator.GetAttributeName(rawName);
-            _expressionAttributeNames[attributeName.Key] = attributeName.Value;
-
-            return attributeName.Key;
-        }
-        
-        private string GetAttributeValue(AttributeValue rawValue)
-        {
-            var attributeValue = _attributeGenerator.GetAttributeValue(rawValue);
-            _expressionAttributeValues[attributeValue.Key] = attributeValue.Value;
-
-            return attributeValue.Key;
-        }
-        
         public override DbDataReader Execute()
         {
             var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
@@ -90,16 +66,16 @@ namespace PrimarSql.Data.Planners
                 sb.Append($" AND {sortKeyName} <> {sortKeyValue}");
             }
 
-            _request.ExpressionAttributeNames = _expressionAttributeNames;
-            _request.ExpressionAttributeValues = _expressionAttributeValues;
+            _request.ExpressionAttributeNames = ExpressionAttributeNames;
+            _request.ExpressionAttributeValues = ExpressionAttributeValues;
             _request.ConditionExpression = sb.ToString();
         }
 
         private void PutItem(IEnumerable<IExpression> row)
         {
-            _expressionAttributeNames.Clear();
-            _expressionAttributeNames.Clear();
-            _attributeGenerator.ResetIndex();
+            ExpressionAttributeNames.Clear();
+            ExpressionAttributeValues.Clear();
+            AttributeGenerator.ResetIndex();
             _hashKeyValue = null;
             _sortKeyName = null;
             _request = null;

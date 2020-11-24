@@ -17,7 +17,7 @@ namespace PrimarSql.Data.Planners
                 catch (AggregateException e)
                 {
                     var innerException = e.InnerExceptions[0];
-                    throw new Exception($"Error while Drop table '{targetTable}'{Environment.NewLine}{innerException.Message}");
+                    throw new Exception($"Error while drop table '{targetTable}'{Environment.NewLine}{innerException.Message}");
                 }
             }
 

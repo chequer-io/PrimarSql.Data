@@ -6,7 +6,6 @@ using System.Text;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Expressions;
-using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Providers;
@@ -16,33 +15,9 @@ namespace PrimarSql.Data.Planners
 {
     internal sealed class UpdatePlanner : QueryPlanner<UpdateQueryInfo>
     {
-        private readonly Dictionary<string, string> _expressionAttributeNames;
-        private readonly Dictionary<string, AttributeValue> _expressionAttributeValues;
-        private readonly ExpressionAttributeGenerator _attributeGenerator;
-
         public UpdatePlanner(UpdateQueryInfo queryInfo)
         {
-            _expressionAttributeNames = new Dictionary<string, string>();
-            _expressionAttributeValues = new Dictionary<string, AttributeValue>();
-            _attributeGenerator = new ExpressionAttributeGenerator();
-
             QueryInfo = queryInfo;
-        }
-
-        private string GetAttributeName(string rawName)
-        {
-            var attributeName = _attributeGenerator.GetAttributeName(rawName);
-            _expressionAttributeNames[attributeName.Key] = attributeName.Value;
-
-            return attributeName.Key;
-        }
-        
-        private string GetAttributeValue(AttributeValue rawValue)
-        {
-            var attributeValue = _attributeGenerator.GetAttributeValue(rawValue);
-            _expressionAttributeValues[attributeValue.Key] = attributeValue.Value;
-
-            return attributeValue.Key;
         }
 
         public IColumn[] GetColumns()
@@ -106,8 +81,8 @@ namespace PrimarSql.Data.Planners
                 {
                     TableName = QueryInfo.TableName,
                     UpdateExpression = updateExpression,
-                    ExpressionAttributeNames = _expressionAttributeNames,
-                    ExpressionAttributeValues = _expressionAttributeValues
+                    ExpressionAttributeNames = ExpressionAttributeNames,
+                    ExpressionAttributeValues = ExpressionAttributeValues
                 };
 
                 request.Key.Add(reader.GetName(0), reader[0].ToAttributeValue());
@@ -122,7 +97,7 @@ namespace PrimarSql.Data.Planners
                 catch (AggregateException e)
                 {
                     var innerException = e.InnerExceptions[0];
-                    throw new Exception($"Error while Update Item (Key: {reader.GetName(0)}){Environment.NewLine}{innerException.Message}");
+                    throw new Exception($"Error while update Item (Key: {reader.GetName(0)}){Environment.NewLine}{innerException.Message}");
                 }
             }
 
