@@ -720,7 +720,7 @@ namespace PrimarSql.Data.Visitors
             switch (context)
             {
                 case ShowTablesContext showTablesContext:
-                    break;
+                    return new ShowTablePlanner();
 
                 case ShowIndexesContext showIndexesContext:
                     break;
