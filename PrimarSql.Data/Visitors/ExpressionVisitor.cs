@@ -251,6 +251,13 @@ namespace PrimarSql.Data.Visitors
                         Value = bool.Parse(booleanLiteralConstantContext.GetText()),
                         ValueType = LiteralValueType.Boolean
                     };
+                
+                case NullConstantContext nullConstantContext:
+                    return new LiteralExpression
+                    {
+                        Value = null,
+                        ValueType = LiteralValueType.Null,
+                    };
             }
 
             return null;
