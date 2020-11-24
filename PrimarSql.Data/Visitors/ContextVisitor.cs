@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PrimarSql.Data.Expressions;
+using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Planners;
 using PrimarSql.Data.Planners.Index;
@@ -51,7 +53,7 @@ namespace PrimarSql.Data.Visitors
                     return new SelectPlanner(VisitSelectStatement(selectStatementContext));
 
                 case InsertStatementContext insertStatementContext:
-                    break;
+                    return new InsertPlanner(VisitInsertStatement(insertStatementContext));
 
                 case UpdateStatementContext updateStatementContext:
 
@@ -64,6 +66,7 @@ namespace PrimarSql.Data.Visitors
             return null;
         }
 
+        #region SelectStatment
         public static SelectQueryInfo VisitSelectStatement(SelectStatementContext context)
         {
             switch (context)
@@ -226,6 +229,54 @@ namespace PrimarSql.Data.Visitors
 
             return null;
         }
+        #endregion
+
+        #region InsertStatement
+        public static InsertQueryInfo VisitInsertStatement(InsertStatementContext context)
+        {
+            var queryInfo = new InsertQueryInfo
+            {
+                IgnoreDuplicate = context.IGNORE() != null,
+                TableName = VisitTableName(context.tableName()),
+                Columns = context.columns?.uid().Select(uid => GetSinglePartName(uid.GetText(), "Column")).ToArray() ?? Array.Empty<string>()
+            };
+
+            VisitInsertStatementValue(context.insertStatementValue(), queryInfo);
+
+            return queryInfo;
+        }
+
+        public static void VisitInsertStatementValue(InsertStatementValueContext context, InsertQueryInfo queryInfo)
+        {
+            if (context.selectStatement() != null)
+            {
+                queryInfo.SelectQueryInfo = VisitSelectStatement(context.selectStatement());
+            }
+            else
+            {
+                queryInfo.Rows = context.expressionsWithDefaults().Select(VisitExpressionsWithDefault);
+            }
+        }
+
+        public static IEnumerable<IExpression> VisitExpressionsWithDefault(ExpressionsWithDefaultsContext context)
+        {
+            return context.expressionOrDefault().Select(VisitExpressionOrDefault);
+        }
+        
+        public static IExpression VisitExpressionOrDefault(ExpressionOrDefaultContext context)
+        {
+            if (context.DEFAULT() != null)
+            {
+                return new LiteralExpression
+                {
+                    Value = null,
+                    ValueType = LiteralValueType.Null
+                };
+            }
+
+            return ExpressionVisitor.VisitExpression(context.expression());
+        }
+        #endregion
         #endregion
 
         public static IQueryPlanner VisitDdlStatementContext(DdlStatementContext context)
