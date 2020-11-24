@@ -57,10 +57,12 @@ namespace PrimarSql.Data.Providers
         {
             var data = Current[ordinal];
 
-            if (data is JValue jValue)
-                return jValue.Value;
-
-            return data.ToString();
+            return data switch
+            {
+                null => DBNull.Value,
+                JValue jValue => jValue.Value,
+                _ => data.ToString()
+            };
         }
 
         public DataRow GetDataRow(string name)
