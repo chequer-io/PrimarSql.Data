@@ -29,7 +29,7 @@ namespace PrimarSql.Data.Providers
 
         public int RecordsAffected => -1;
 
-        public JToken[] Current { get; private set; }
+        public object[] Current { get; private set; }
 
         public AtomTableSource AtomTableSource => QueryInfo.TableSource as AtomTableSource;
         

@@ -5,7 +5,7 @@ namespace PrimarSql.Data.Providers
 {
     internal sealed class EmptyDataProvider : IDataProvider
     {
-        public JToken[] Current => null;
+        public object[] Current => null;
 
         public object this[int i] => null;
 

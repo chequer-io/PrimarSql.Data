@@ -5,7 +5,7 @@ namespace PrimarSql.Data.Providers
 {
     internal interface IDataProvider
     {
-        JToken[] Current { get; }
+        object[] Current { get; }
         
         object this[int i] { get; }
         
