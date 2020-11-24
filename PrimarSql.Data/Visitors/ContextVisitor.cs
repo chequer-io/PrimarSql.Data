@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Antlr4.Runtime;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Planners;
 using PrimarSql.Data.Planners.Index;
+using PrimarSql.Data.Planners.Show;
 using PrimarSql.Data.Planners.Table;
 using PrimarSql.Data.Sources;
 using PrimarSql.Data.Utilities;
@@ -38,7 +40,7 @@ namespace PrimarSql.Data.Visitors
             if (context.showStatement() != null)
                 return VisitShowStatementContext(context.showStatement());
 
-            throw new NotSupportedException($"Not Supported Statement. (Name: {context.GetType().Name[..^7]})");
+            return VisitorHelper.ThrowNotSupportedContext<IQueryPlanner>(context);
         }
 
         #region DML Statement
@@ -62,7 +64,7 @@ namespace PrimarSql.Data.Visitors
                     return new DeletePlanner(VisitDeleteStatement(deleteStatementContext));
             }
 
-            return null;
+            return VisitorHelper.ThrowNotSupportedContext<IQueryPlanner>((ParserRuleContext)context.children[0]);
         }
 
         #region SelectStatment
@@ -77,7 +79,7 @@ namespace PrimarSql.Data.Visitors
                     return VisitQueryExpression(parenthesisSelectContext.queryExpression());
             }
 
-            return null;
+            return VisitorHelper.ThrowNotSupportedContext<SelectQueryInfo>(context);
         }
 
         public static SelectQueryInfo VisitQueryExpression(QueryExpressionContext context)
@@ -181,13 +183,13 @@ namespace PrimarSql.Data.Visitors
                     };
 
                 case SelectFunctionElementContext _:
-                    throw new NotSupportedException("Not Supported Select Element Function Feature.");
+                    return VisitorHelper.ThrowNotSupportedFeature<IColumn>("Select Element Function");
 
                 case SelectExpressionElementContext _:
-                    throw new NotSupportedException("Not Supported Select Element Expression Feature.");
+                    return VisitorHelper.ThrowNotSupportedFeature<IColumn>("Select Element Expression");
             }
 
-            return null;
+            return VisitorHelper.ThrowNotSupportedContext<IColumn>(context);
         }
 
         public static ITableSource VisitTableSource(TableSourceContext context)
@@ -201,7 +203,7 @@ namespace PrimarSql.Data.Visitors
                     return VisitTableSourceBase(tableSourceNestedContext.tableSourceItem());
             }
 
-            return null;
+            return VisitorHelper.ThrowNotSupportedContext<ITableSource>(context);
         }
 
         public static ITableSource VisitTableSourceBase(TableSourceItemContext context)
@@ -226,7 +228,7 @@ namespace PrimarSql.Data.Visitors
                     };
             }
 
-            return null;
+            return VisitorHelper.ThrowNotSupportedContext<ITableSource>(context);
         }
         #endregion
 
@@ -356,7 +358,7 @@ namespace PrimarSql.Data.Visitors
                     return VisitDropTableContext(dropTableContext);
             }
 
-            return null;
+            return VisitorHelper.ThrowNotSupportedContext<IQueryPlanner>((ParserRuleContext)context.children[0]);
         }
 
         #region Create Index
@@ -705,7 +707,7 @@ namespace PrimarSql.Data.Visitors
                     break;
             }
 
-            return null;
+            return VisitorHelper.ThrowNotSupportedContext<IQueryPlanner>(context);
         }
 
         public static IQueryPlanner VisitShowStatementContext(ShowStatementContext context)
@@ -724,7 +726,7 @@ namespace PrimarSql.Data.Visitors
                     break;
             }
 
-            return null;
+            return VisitorHelper.ThrowNotSupportedContext<IQueryPlanner>(context);
         }
     }
 }

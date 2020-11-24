@@ -1,4 +1,5 @@
 ﻿using System;
+using Antlr4.Runtime;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models.Columns;
 
@@ -10,6 +11,16 @@ namespace PrimarSql.Data.Utilities
         {
             "varchar", "text", "mediumtext", "longtext", "string"
         };
+
+        public static T ThrowNotSupportedContext<T>(ParserRuleContext context)
+        {
+            throw new NotSupportedException($"Not Supported Context. (Name: {context.GetType().Name[..^7]})");
+        }
+
+        public static T ThrowNotSupportedFeature<T>(string featureName)
+        {
+            throw new NotSupportedException($"Not Supported {featureName} Feature.");
+        }
 
         public static readonly string[] NumberTypes =
         {
