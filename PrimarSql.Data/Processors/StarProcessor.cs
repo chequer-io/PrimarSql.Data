@@ -16,13 +16,7 @@ namespace PrimarSql.Data.Processors
         {
             if (_schemaTable == null)
             {
-                _schemaTable = new DataTable();
-                _schemaTable.Columns.Add(SchemaTableColumn.ColumnName, typeof(string));
-                _schemaTable.Columns.Add(SchemaTableColumn.ColumnOrdinal, typeof(int));
-                _schemaTable.Columns.Add(SchemaTableColumn.DataType, typeof(Type));
-                _schemaTable.Columns.Add("Path", typeof(string[]));
-                _schemaTable.Columns.Add(SchemaTableOptionalColumn.IsReadOnly, typeof(bool));
-
+                _schemaTable = DataProviderUtility.GetNewSchemaTable();
                 _schemaTable.Rows.Add("Document", 0, typeof(object), null, false);
             }
 
