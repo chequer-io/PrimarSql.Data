@@ -10,9 +10,8 @@ namespace PrimarSql.Data.Expressions.Generators
     {
         protected class GeneratorContext
         {
-            private int _namesCount;
-            private int _valuesCount;
-
+            private ExpressionAttributeGenerator _attributeGenerator;
+                
             private readonly Dictionary<ExpressionAttributeName, int> _attributeNames;
             private readonly Dictionary<ExpressionAttributeValue, int> _attributeValues;
 
@@ -26,6 +25,7 @@ namespace PrimarSql.Data.Expressions.Generators
 
             internal GeneratorContext()
             {
+                _attributeGenerator = new ExpressionAttributeGenerator();
                 _attributeNames = new Dictionary<ExpressionAttributeName, int>();
                 _attributeValues = new Dictionary<ExpressionAttributeValue, int>();
             }
@@ -91,7 +91,7 @@ namespace PrimarSql.Data.Expressions.Generators
 
             public ExpressionAttributeName GetAttributeName(string rawColumnName)
             {
-                var attrName = new ExpressionAttributeName($"#name{_namesCount++}", rawColumnName);
+                var attrName = _attributeGenerator.GetAttributeName(rawColumnName);
                 _attributeNames[attrName] = 1;
 
                 return attrName;
@@ -99,7 +99,7 @@ namespace PrimarSql.Data.Expressions.Generators
 
             public ExpressionAttributeValue GetAttributeValue(AttributeValue value)
             {
-                var attrValue = new ExpressionAttributeValue($":value{_valuesCount++}", value);
+                var attrValue = _attributeGenerator.GetAttributeValue(value);
                 _attributeValues[attrValue] = 1;
 
                 return attrValue;

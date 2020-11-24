@@ -103,7 +103,7 @@ namespace PrimarSql.Data.Planners
         public void Validate()
         {
             if (_tempItemCount != 0)
-                throw new InvalidOperationException("Constraint definition column name should be exists.");
+                throw new InvalidOperationException("Constraint definition column name must exists.");
             
             if (HashKeyColumn == null)
                 throw new InvalidOperationException($"No hash key defined for Table '{TableName}'.");

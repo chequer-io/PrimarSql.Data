@@ -150,7 +150,7 @@ namespace PrimarSql.Data.Expressions.Generators
         private FunctionCondition AnalyzeFunctionExpression(FunctionExpression expression, IExpression parent, int depth)
         {
             if (!(expression.Member is MemberExpression memberExpression))
-                throw new InvalidOperationException("Function member should be MemberExpression.");
+                throw new InvalidOperationException("Function member must MemberExpression.");
 
             return new FunctionCondition
             {

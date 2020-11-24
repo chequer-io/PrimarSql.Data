@@ -48,7 +48,7 @@ namespace PrimarSql.Data.Visitors
             switch (context.children[0])
             {
                 case SelectStatementContext selectStatementContext:
-                    return new SelectQueryPlanner(VisitSelectStatement(selectStatementContext));
+                    return new SelectPlanner(VisitSelectStatement(selectStatementContext));
 
                 case InsertStatementContext insertStatementContext:
                     break;

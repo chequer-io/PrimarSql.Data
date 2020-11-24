@@ -3,9 +3,9 @@ using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
 {
-    internal sealed class SelectQueryPlanner : QueryPlanner<SelectQueryInfo>
+    internal sealed class SelectPlanner : QueryPlanner<SelectQueryInfo>
     {
-        public SelectQueryPlanner(SelectQueryInfo queryInfo)
+        public SelectPlanner(SelectQueryInfo queryInfo)
         {
             QueryInfo = queryInfo;
         }

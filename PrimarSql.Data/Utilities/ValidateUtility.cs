@@ -11,7 +11,7 @@ namespace PrimarSql.Data.Utilities
                 throw new InvalidOperationException($"Empty {nameType} name.");
 
             if (values.Length > 1)
-                throw new InvalidOperationException($"{nameType} name should be single identifier");
+                throw new InvalidOperationException($"{nameType} name must single identifier");
         }
 
         public static void ValidateTableWithIndexName(IPart[] values)
