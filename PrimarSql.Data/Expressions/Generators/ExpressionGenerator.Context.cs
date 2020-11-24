@@ -16,9 +16,9 @@ namespace PrimarSql.Data.Expressions.Generators
             private readonly Dictionary<ExpressionAttributeName, int> _attributeNames;
             private readonly Dictionary<ExpressionAttributeValue, int> _attributeValues;
 
-            public ExpressionAttributeName[] AttributeNames => _attributeNames.Select(i => i.Key).ToArray();
+            public IEnumerable<ExpressionAttributeName> AttributeNames => _attributeNames.Keys;
 
-            public ExpressionAttributeValue[] AttributeValues => _attributeValues.Select(i => i.Key).ToArray();
+            public IEnumerable<ExpressionAttributeValue> AttributeValues => _attributeValues.Keys;
 
             public Dictionary<HashKey, HashKeyCondition> HashKeys { get; } = new Dictionary<HashKey, HashKeyCondition>();
 

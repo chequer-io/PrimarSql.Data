@@ -42,8 +42,8 @@ namespace PrimarSql.Data.Expressions.Generators
                 HashKey = Context.HashKeys.FirstOrDefault().Key,
                 SortKey = Context.SortKeys.FirstOrDefault().Key,
                 FilterExpression = condition?.ToExpression(valueManager),
-                ExpressionAttributeNames = Context.AttributeNames,
-                ExpressionAttributeValues = Context.AttributeValues
+                ExpressionAttributeNames = Context.AttributeNames.ToArray(),
+                ExpressionAttributeValues = Context.AttributeValues.ToArray()
             };
         }
 
