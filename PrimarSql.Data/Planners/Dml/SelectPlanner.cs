@@ -5,6 +5,10 @@ namespace PrimarSql.Data.Planners
 {
     internal sealed class SelectPlanner : QueryPlanner<SelectQueryInfo>
     {
+        public SelectPlanner()
+        {
+        }
+        
         public SelectPlanner(SelectQueryInfo queryInfo)
         {
             QueryInfo = queryInfo;

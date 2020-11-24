@@ -48,7 +48,15 @@ namespace PrimarSql.Data.Extensions
                 IEnumerable<int> iList => iList.ToAttributeValue(),
                 IEnumerable<string> sList => sList.ToAttributeValue(),
                 DBNull dbNull => dbNull.ToAttributeValue(),
-                _ => null
+                _ => GetNullAttributeValue()
+            };
+        }
+
+        public static AttributeValue GetNullAttributeValue()
+        {
+            return new AttributeValue
+            {
+                NULL = true
             };
         }
 
