@@ -35,7 +35,7 @@ namespace PrimarSql.Data.Planners
 
         public T QueryInfo { get; set; }
         
-        public QueryContext QueryContext { get; set; }
+        public QueryContext Context { get; set; }
         
         public abstract DbDataReader Execute();
     }

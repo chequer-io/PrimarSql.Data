@@ -13,7 +13,7 @@ namespace PrimarSql.Data.Planners
         public override DbDataReader Execute()
         {
             return new PrimarSqlDataReader(
-                new ApiDataProvider(QueryContext, QueryInfo)
+                new ApiDataProvider(Context, QueryInfo)
             );
         }
     }

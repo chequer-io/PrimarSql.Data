@@ -50,7 +50,7 @@ namespace PrimarSql.Data.Planners
         
         public override DbDataReader Execute()
         {
-            var tableDescription = QueryContext.GetTableDescription(QueryInfo.TableName);
+            var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
             List<KeySchemaElement> keySchema = tableDescription.KeySchema;
             _hashKeyName = keySchema.First(schema => schema.KeyType == KeyType.HASH).AttributeName;
             _sortKeyName = keySchema.FirstOrDefault(schema => schema.KeyType == KeyType.RANGE)?.AttributeName;
@@ -145,7 +145,7 @@ namespace PrimarSql.Data.Planners
 
             try
             {
-                QueryContext.Client.PutItemAsync(_request).Wait();
+                Context.Client.PutItemAsync(_request).Wait();
             }
             catch (AggregateException e)
             {

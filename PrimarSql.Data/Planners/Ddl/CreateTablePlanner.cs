@@ -30,7 +30,7 @@ namespace PrimarSql.Data.Planners
         {
             try
             {
-                QueryContext.GetTableDescription(QueryInfo.TableName);
+                Context.GetTableDescription(QueryInfo.TableName);
                 
                 if (QueryInfo.SkipIfExists)
                     return new PrimarSqlDataReader(new EmptyDataProvider());
@@ -91,7 +91,7 @@ namespace PrimarSql.Data.Planners
                 request.AttributeDefinitions.Add(new AttributeDefinition(column.ColumnName, DataTypeToScalarAttributeType(column.DataType)));
             }
 
-            QueryContext.Client.CreateTableAsync(request).Wait();
+            Context.Client.CreateTableAsync(request).Wait();
             
             return new PrimarSqlDataReader(new EmptyDataProvider());
         }

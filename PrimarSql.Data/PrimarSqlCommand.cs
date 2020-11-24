@@ -74,7 +74,7 @@ namespace PrimarSql.Data
         {
             var root = PrimarSqlParser.Parse(CommandText);
             var queryPlanner = ContextVisitor.Visit(root);
-            queryPlanner.QueryContext = new QueryContext(Client);
+            queryPlanner.Context = new QueryContext(Client);
             
             return queryPlanner.Execute();
         }

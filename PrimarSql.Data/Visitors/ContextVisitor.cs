@@ -56,8 +56,7 @@ namespace PrimarSql.Data.Visitors
                     return new InsertPlanner(VisitInsertStatement(insertStatementContext));
 
                 case UpdateStatementContext updateStatementContext:
-
-                    break;
+                    return new UpdatePlanner(VisitUpdateStatement(updateStatementContext));
 
                 case DeleteStatementContext deleteStatementContext:
                     break;
@@ -262,7 +261,7 @@ namespace PrimarSql.Data.Visitors
         {
             return context.expressionOrDefault().Select(VisitExpressionOrDefault);
         }
-        
+
         public static IExpression VisitExpressionOrDefault(ExpressionOrDefaultContext context)
         {
             if (context.DEFAULT() != null)
@@ -275,6 +274,38 @@ namespace PrimarSql.Data.Visitors
             }
 
             return ExpressionVisitor.VisitExpression(context.expression());
+        }
+        #endregion
+
+        #region UpdateExpression
+        public static UpdateQueryInfo VisitUpdateStatement(UpdateStatementContext context)
+        {
+            var queryInfo = new UpdateQueryInfo
+            {
+                TableName = VisitTableName(context.tableName()),
+                UpdatedElements = context.updatedElement().Select(VisitUpdateElement),
+                WhereExpression = context.expression() != null ?
+                    ExpressionVisitor.VisitExpression(context.expression())
+                    : null
+            };
+
+            if (context.limitClause() != null)
+            {
+                var limitClause = context.limitClause();
+
+                if (int.TryParse(limitClause.limit.GetText(), out int limit))
+                    queryInfo.Limit = limit;
+            }
+
+            return queryInfo;
+        }
+
+        public static (IPart[], IExpression) VisitUpdateElement(UpdatedElementContext context)
+        {
+            var columnName = ExpressionVisitor.VisitFullColumnName(context.fullColumnName());
+            var expression = ExpressionVisitor.VisitExpression(context.expression());
+
+            return (columnName.Name, expression);
         }
         #endregion
         #endregion

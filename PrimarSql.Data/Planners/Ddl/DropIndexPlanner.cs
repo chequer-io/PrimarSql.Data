@@ -27,7 +27,7 @@ namespace PrimarSql.Data.Planners
                     }
                 };
 
-                QueryContext.Client.UpdateTableAsync(request).Wait();
+                Context.Client.UpdateTableAsync(request).Wait();
             }
             catch (AggregateException e)
             {

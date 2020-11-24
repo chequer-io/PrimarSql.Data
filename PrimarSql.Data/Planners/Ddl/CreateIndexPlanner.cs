@@ -24,7 +24,7 @@ namespace PrimarSql.Data.Planners
                     IndexDefinition = indexDefinition
                 };
 
-                action.Action(request.GlobalSecondaryIndexUpdates, QueryContext.GetTableDescription(QueryInfo.TableName));
+                action.Action(request.GlobalSecondaryIndexUpdates, Context.GetTableDescription(QueryInfo.TableName));
 
                 request.AttributeDefinitions.Add(
                     new AttributeDefinition(indexDefinition.HashKey, DataTypeToScalarAttributeType(QueryInfo.IndexDefinitionWithType.HashKeyType))
@@ -37,7 +37,7 @@ namespace PrimarSql.Data.Planners
                     );
                 }
                 
-                QueryContext.Client.UpdateTableAsync(request).Wait();
+                Context.Client.UpdateTableAsync(request).Wait();
             }
             catch (AggregateException e)
             {

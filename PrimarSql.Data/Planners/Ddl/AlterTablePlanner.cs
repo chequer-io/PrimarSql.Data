@@ -10,7 +10,7 @@ namespace PrimarSql.Data.Planners
     {
         public override DbDataReader Execute()
         {
-            var tableDescription = QueryContext.GetTableDescription(QueryInfo.TableName);
+            var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
             
             var request = new UpdateTableRequest
             {
@@ -34,7 +34,7 @@ namespace PrimarSql.Data.Planners
             foreach (var column in QueryInfo.TableColumns)
                 request.AttributeDefinitions.Add(new AttributeDefinition(column.ColumnName, DataTypeToScalarAttributeType(column.DataType)));
             
-            QueryContext.Client.UpdateTableAsync(request).Wait();
+            Context.Client.UpdateTableAsync(request).Wait();
 
             return new PrimarSqlDataReader(new EmptyDataProvider());
         }

@@ -7,7 +7,7 @@ namespace PrimarSql.Data.Planners
     {
         IQueryInfo QueryInfo { get; }
         
-        QueryContext QueryContext { get; set; }
+        QueryContext Context { get; set; }
         
         DbDataReader Execute();
     }

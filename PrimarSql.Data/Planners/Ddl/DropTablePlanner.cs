@@ -12,7 +12,7 @@ namespace PrimarSql.Data.Planners
             {
                 try
                 {
-                    QueryContext.Client.DeleteTableAsync(targetTable).Wait();
+                    Context.Client.DeleteTableAsync(targetTable).Wait();
                 }
                 catch (AggregateException e)
                 {
