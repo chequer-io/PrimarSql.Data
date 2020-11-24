@@ -24,11 +24,12 @@ namespace PrimarSql.Data.Processors
             _schemaTable.Columns.Add("Path", typeof(IPart[]));
             _schemaTable.Columns.Add(SchemaTableOptionalColumn.IsReadOnly, typeof(bool));
 
+            int ordinal = 0;
             foreach (var column in columns)
             {
                 string name = string.IsNullOrEmpty(column.Alias) ? column.Name.ToName() : column.Alias;
 
-                _schemaTable.Rows.Add(name, 0, typeof(object), column.Name, false);
+                _schemaTable.Rows.Add(name, ordinal++, typeof(object), column.Name, false);
             }
         }
 
