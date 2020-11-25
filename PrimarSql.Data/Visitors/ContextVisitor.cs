@@ -701,11 +701,11 @@ namespace PrimarSql.Data.Visitors
                 case DescribeTableContext describeTableContext:
                     return new DescribeTablePlanner(VisitTableName(describeTableContext.tableName()));
 
-                case DescribeLimitsContext describeLimitsContext:
-                    break;
+                case DescribeLimitsContext _:
+                    return new DescribeLimitsPlanner();
 
-                case DescribeEndPointsContext describeEndPointsContext:
-                    break;
+                case DescribeEndPointsContext _:
+                    return new DescribeEndPointsPlanner();
             }
 
             return VisitorHelper.ThrowNotSupportedContext<IQueryPlanner>(context);
