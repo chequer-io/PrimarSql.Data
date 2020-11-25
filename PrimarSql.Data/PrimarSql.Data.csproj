@@ -2,12 +2,29 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
+        <RootNamespace>PrimarSql.Data</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup Label="Nuspec">
+        <Title>PrimarSQL.Data</Title>
+        <Description>.NET Core SQL parser for DynamoDB</Description>
+        <Authors>CHEQUER</Authors>
+        <Company>CHEQUER</Company>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <RepositoryUrl>https://github.com/chequer-io/PrimarSql.Data</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/chequer-io/PrimarSql.Data</PackageProjectUrl>
+        <Version>1.0.0</Version>
+        <PackageIcon>Logo.png</PackageIcon>
+        <PackageTags>sql;primarsql;dynamodb;nosql;ado.net;connector;primarsql.data</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.5.3.4" />
-      <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-      <PackageReference Include="PrimarSql" Version="1.1.5" />
+        <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.5.3.4" />
+        <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+        <PackageReference Include="PrimarSql" Version="1.1.5" />
+
+        <None Include="..\Logo.png" PackagePath="" Pack="True" />
+        <None Include="..\LICENSE" PackagePath="" Pack="True" />
     </ItemGroup>
 
 </Project>
