@@ -723,7 +723,7 @@ namespace PrimarSql.Data.Visitors
                     return new ShowTablePlanner();
 
                 case ShowIndexesContext showIndexesContext:
-                    break;
+                    return new ShowIndexesPlanner(VisitTableName(showIndexesContext.tableName()));
             }
 
             return VisitorHelper.ThrowNotSupportedContext<IQueryPlanner>(context);
