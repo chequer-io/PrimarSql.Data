@@ -33,6 +33,6 @@ namespace PrimarSql.Data.Processors
             return matchedRows.FirstOrDefault();
         }
 
-        public abstract JToken[] Process(Dictionary<string, AttributeValue> row);
+        public abstract object[] Process(Dictionary<string, AttributeValue> row);
     }
 }

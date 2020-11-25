@@ -33,13 +33,15 @@ namespace PrimarSql.Data.Processors
             return _schemaTable;
         }
 
-        public override JToken[] Process(Dictionary<string, AttributeValue> row)
+        public override object[] Process(Dictionary<string, AttributeValue> row)
         {
             var jObject = row.ToJObject();
 
             return _schemaTable.Rows
                 .Cast<DataRow>()
-                .Select(dataRow => SelectToken(jObject, (IPart[])dataRow["path"])).ToArray();
+                .Select(dataRow => SelectToken(jObject, (IPart[])dataRow["path"]))
+                .Cast<object>()
+                .ToArray();
         }
 
         private JToken SelectToken(JToken token, IEnumerable<IPart> parts)

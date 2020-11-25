@@ -23,9 +23,9 @@ namespace PrimarSql.Data.Processors
             return _schemaTable;
         }
 
-        public override JToken[] Process(Dictionary<string, AttributeValue> row)
+        public override object[] Process(Dictionary<string, AttributeValue> row)
         {
-            return new JToken[] { row.ToJObject() };
+            return new object[] { row.ToJObject() };
         }
     }
 }

@@ -13,6 +13,6 @@ namespace PrimarSql.Data.Processors
 
         DataRow GetDataRow(int ordinal);
         
-        JToken[] Process(Dictionary<string, AttributeValue> row);
+        object[] Process(Dictionary<string, AttributeValue> row);
     }
 }
