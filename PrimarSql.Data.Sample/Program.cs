@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using PrimarSql.Data.Models;
+using Spectre.Console;
 
 namespace PrimarSql.Data.Sample
 {
@@ -10,41 +12,78 @@ namespace PrimarSql.Data.Sample
 
         static void Main(string[] args)
         {
-            // string query = "DROP TABLE a, b, `c`";
-            // string query = "SELECT STRONGLY * FROM actor.IncludeIndexTest WHERE a = 1";
-            // string query = "SELECT * FROM city where country_id = 7 AND city_id = 586 AND city = 'Yeravan'";
-            // string query = "SELECT * FROM actor where actor_id = 7 AND last_name = 'MOSTEL'";
-            // string query = "SELECT * FROM actor where 1 IN (actor_id, 2, 3)";
-            // string query = "SELECT `a.b`, test[0].a, test[0], test[1] FROM test WHERE `a.b` = 'aaaaaaa'";
-            // string query = "SELECT * FROM actor WHERE actor_id BETWEEN '1' AND '2'";
-            
+            var apiKey = ApiKey;
+            var secret = Secret;
+
+            if (string.IsNullOrEmpty(apiKey))
+                apiKey = AnsiConsole.Ask<string>("Enter your DynamoDB [blue]API Key[/]");
+
+            TextPrompt<string> secretPrompt = new TextPrompt<string>("Enter your DynamoDB [blue]API Secret[/]")
+                .PromptStyle("red")
+                .Secret();
+
+            if (string.IsNullOrEmpty(secret))
+                secret = AnsiConsole.Prompt(secretPrompt);
+
+            TextPrompt<string> regionPrompt = new TextPrompt<string>("Enter your DynamoDB [blue]Region[/]?")
+                .InvalidChoiceMessage("[red]Invalid Region[/]")
+                .DefaultValue("APNortheast2");
+
+            foreach (string regionName in Enum.GetNames(typeof(AwsRegion)))
+                regionPrompt.AddChoice(regionName);
+
+            var region = AnsiConsole.Prompt(regionPrompt);
+
             var connection = new PrimarSqlConnection(new PrimarSqlConnectionStringBuilder
             {
-                AccessKey = ApiKey,
-                AccessSecretKey = Secret,
-                AwsRegion = AwsRegion.APNortheast2,
+                AccessKey = apiKey,
+                AccessSecretKey = secret,
+                AwsRegion = Enum.Parse<AwsRegion>(region),
             });
 
             connection.Open();
 
-            var command = connection.CreateDbCommand("SELECT last_name, actor_id, last_update, first_name FROM actor");
-
-            var dbDataReader = command.ExecuteReader();
-            
-            while (dbDataReader.Read())
+            while (true)
             {
-                Console.Write("|");
-
-                for (int i = 0; i < dbDataReader.FieldCount; i++)
+                try
                 {
-                    Console.Write(dbDataReader[i]);
-                    Console.Write("|");
+                    var query = AnsiConsole.Prompt(new TextPrompt<string>("[blue]Query[/]"));
+                    var command = connection.CreateDbCommand(query);
+                    var dbDataReader = command.ExecuteReader();
+
+                    var table = new Table
+                    {
+                        Border = TableBorder.Rounded
+                    };
+
+                    for (int i = 0; i < dbDataReader.FieldCount; i++)
+                        table.AddColumn($"[green]{dbDataReader.GetName(i)}[/]");
+
+                    while (dbDataReader.Read())
+                    {
+                        var list = new List<string>();
+
+                        for (int i = 0; i < dbDataReader.FieldCount; i++)
+                        {
+                            list.Add(dbDataReader[i].ToString());
+                        }
+
+                        table.AddRow(list.ToArray());
+                    }
+
+                    AnsiConsole.Render(table);
                 }
-
-                Console.ReadLine();
+                catch (AggregateException e)
+                {
+                    AnsiConsole.Markup("[bold white on red]{0}[/]", Markup.Escape(e.InnerExceptions[0].Message));
+                    Console.WriteLine();
+                }
+                catch (Exception e)
+                {
+                    AnsiConsole.Markup("[bold white on red]{0}[/]", Markup.Escape(e.Message));
+                    Console.WriteLine();
+                }
             }
-
-            Console.WriteLine("==End==");
         }
     }
 }

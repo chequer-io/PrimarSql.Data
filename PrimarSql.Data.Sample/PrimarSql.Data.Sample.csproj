@@ -9,4 +9,8 @@
       <ProjectReference Include="..\PrimarSql.Data\PrimarSql.Data.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Spectre.Console" Version="0.30.0" />
+    </ItemGroup>
+
 </Project>
