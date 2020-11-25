@@ -66,7 +66,7 @@ namespace PrimarSql.Data.Providers
             {
                 null => DBNull.Value,
                 JValue jValue => jValue.Value,
-                _ => data.ToString()
+                _ => data
             };
         }
 
