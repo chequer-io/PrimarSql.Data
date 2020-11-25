@@ -9,34 +9,36 @@ using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Providers
 {
-    internal sealed class ArrayDataColumn
-    {
-        public string Name { get; set; }
-
-        public Type Type { get; set; }
-    }
-
-    internal sealed class ArrayDataProvider : IDataProvider
+    internal sealed class ListDataProvider : IDataProvider
     {
         private DataTable _schemaTable;
-        private readonly ArrayDataColumn[] _columns;
-        private readonly object[][] _datas;
+        private readonly List<(string, Type)> _columns = new List<(string, Type)>();
+        private readonly List<object[]> _rows = new List<object[]>();
         private int _index;
 
         public object this[int i] => GetData(i);
 
-        public bool HasRows => _datas.Length > 0;
+        public bool HasRows => _rows.Count > 0;
 
-        public bool HasMoreRows => _datas.Length > _index + 1;
+        public bool HasMoreRows => _rows.Count > _index;
 
         public int RecordsAffected => -1;
 
         public object[] Current { get; private set; }
 
-        public ArrayDataProvider(object[][] datas, ArrayDataColumn[] columns)
+        public void AddColumn(string name, Type columnType)
         {
-            _columns = columns;
-            _datas = datas;
+            _columns.Add((name, columnType));
+        }
+
+        public void AddRow(params object[] row)
+        {
+            _rows.Add(row);
+        }
+
+        public void AddRows(params object[][] rows)
+        {
+            _rows.AddRange(rows);
         }
 
         public DataTable GetSchemaTable()
@@ -47,9 +49,9 @@ namespace PrimarSql.Data.Providers
 
                 int i = 0;
 
-                foreach (var column in _columns)
+                foreach (var (name, type) in _columns)
                 {
-                    _schemaTable.Rows.Add(column.Name, i++, column.Type, new IPart[] { new IdentifierPart(column.Name) }, false);
+                    _schemaTable.Rows.Add(name, i++, type, new IPart[] { new IdentifierPart(name) }, false);
                 }
             }
 
@@ -95,7 +97,7 @@ namespace PrimarSql.Data.Providers
             if (!HasMoreRows)
                 return false;
 
-            Current = _datas[_index++];
+            Current = _rows[_index++];
 
             return true;
         }
