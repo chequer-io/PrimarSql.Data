@@ -10,7 +10,7 @@ namespace PrimarSql.Data
     {
         private readonly IDataProvider _dataProvider;
         
-        public override int FieldCount => _dataProvider.GetSchemaTable().Rows.Count;
+        public override int FieldCount => _dataProvider.GetSchemaTable()?.Rows.Count ?? 0;
 
         public override bool HasRows => _dataProvider.HasRows;
 

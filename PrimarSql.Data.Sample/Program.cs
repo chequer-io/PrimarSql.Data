@@ -65,7 +65,14 @@ namespace PrimarSql.Data.Sample
 
                         for (int i = 0; i < dbDataReader.FieldCount; i++)
                         {
-                            list.Add(dbDataReader[i].ToString());
+                            var value = dbDataReader[i];
+
+                            list.Add(Markup.Escape(value switch
+                            {
+                                byte[] bArr => Convert.ToBase64String(bArr),
+                                DateTime dt => dt.ToString("u"),
+                                _ => value.ToString()
+                            }));
                         }
 
                         table.AddRow(list.ToArray());

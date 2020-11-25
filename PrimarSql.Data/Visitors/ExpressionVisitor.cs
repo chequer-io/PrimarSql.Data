@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
+using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Utilities;
@@ -144,6 +146,23 @@ namespace PrimarSql.Data.Visitors
                 case ConstantExpressionAtomContext constantExpressionAtomContext:
                     return VisitConstant(constantExpressionAtomContext.constant());
 
+                case JsonExpressionAtomContext jsonExpressionAtomContext:
+                    return new LiteralExpression
+                    {
+                        Value = JObject.Parse(jsonExpressionAtomContext.jsonObject().GetText()),
+                        ValueType = LiteralValueType.Object
+                    };
+
+                case BinaryExpressionAtomContext binaryExpressionAtomContext:
+                {
+                    var base64Str = VisitStringLiteral(binaryExpressionAtomContext.stringLiteral()).Value.ToString();
+                    return new LiteralExpression
+                    {
+                        Value = Convert.FromBase64String(base64Str),
+                        ValueType = LiteralValueType.Binary
+                    };
+                }
+                
                 case FullColumnNameExpressionAtomContext fullColumnNameExpressionAtomContext:
                     return VisitFullColumnNameExpressionAtom(fullColumnNameExpressionAtomContext);
 

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
+using Newtonsoft.Json.Linq;
 
 namespace PrimarSql.Data.Extensions
 {
@@ -25,6 +27,9 @@ namespace PrimarSql.Data.Extensions
             if (value.SS.Count > 0)
                 return value.SS;
 
+            if (value.B != null)
+                return value.B.ToArray();
+            
             if (!string.IsNullOrEmpty(value.N))
                 return double.Parse(value.N);
 
@@ -47,6 +52,10 @@ namespace PrimarSql.Data.Extensions
                 string s => s.ToAttributeValue(),
                 IEnumerable<int> iList => iList.ToAttributeValue(),
                 IEnumerable<string> sList => sList.ToAttributeValue(),
+                JValue jValue => jValue.ToAttributeValue(),
+                JArray jArray => jArray.ToAttributeValue(),
+                JObject jObject => jObject.ToAttributeValue(),
+                byte[] bytes => bytes.ToAttributeValue(),
                 DBNull dbNull => dbNull.ToAttributeValue(),
                 _ => GetNullAttributeValue()
             };
@@ -156,6 +165,49 @@ namespace PrimarSql.Data.Extensions
             };
         }
 
+        public static AttributeValue ToAttributeValue(this JToken jToken)
+        {
+            return jToken switch
+            {
+                JValue jValue => jValue.ToAttributeValue(),
+                JArray jArray => jArray.ToAttributeValue(),
+                JObject jObject => jObject.ToAttributeValue(),
+                _ => GetNullAttributeValue()
+            };
+        }
+
+        public static AttributeValue ToAttributeValue(this JValue jValue)
+        {
+            return jValue.Value.ToAttributeValue();
+        }
+
+        public static AttributeValue ToAttributeValue(this JArray jArray)
+        {
+            return new AttributeValue
+            {
+                L = jArray.Values().Select(ToAttributeValue).ToList()
+            };
+        }
+
+        public static AttributeValue ToAttributeValue(this JObject jObject)
+        {
+            return new AttributeValue
+            {
+                M = jObject
+                    .Properties()
+                    .Select(property => (property.Name, property.Value.ToAttributeValue()))
+                    .ToDictionary(kv => kv.Name, kv => kv.Item2)
+            };
+        }
+
+        public static AttributeValue ToAttributeValue(this byte[] bytes)
+        {
+            return new AttributeValue
+            {
+                B = new MemoryStream(bytes)
+            };
+        }
+        
         public static AttributeValue ToAttributeValue(this DBNull _)
         {
             return new AttributeValue

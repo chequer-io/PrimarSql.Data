@@ -26,6 +26,9 @@ namespace PrimarSql.Data.Utilities
             if (value.NULL)
                 return null;
             
+            if (value.B != null)
+                return new JValue(value.B.ToArray());
+            
             if (value.IsLSet)
                 return new JArray(value.L.Select(ToJToken));
 
