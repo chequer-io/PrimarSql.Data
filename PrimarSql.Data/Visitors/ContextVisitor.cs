@@ -6,6 +6,7 @@ using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Planners;
+using PrimarSql.Data.Planners.Describe;
 using PrimarSql.Data.Planners.Index;
 using PrimarSql.Data.Planners.Show;
 using PrimarSql.Data.Planners.Table;
@@ -698,7 +699,7 @@ namespace PrimarSql.Data.Visitors
             switch (context)
             {
                 case DescribeTableContext describeTableContext:
-                    break;
+                    return new DescribeTablePlanner(VisitTableName(describeTableContext.tableName()));
 
                 case DescribeLimitsContext describeLimitsContext:
                     break;
@@ -719,7 +720,7 @@ namespace PrimarSql.Data.Visitors
         {
             switch (context)
             {
-                case ShowTablesContext showTablesContext:
+                case ShowTablesContext _:
                     return new ShowTablePlanner();
 
                 case ShowIndexesContext showIndexesContext:
