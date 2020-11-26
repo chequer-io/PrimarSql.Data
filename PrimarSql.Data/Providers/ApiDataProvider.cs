@@ -1,38 +1,33 @@
 ﻿using System;
 using System.Data;
-using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Models;
-using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Planners;
-using PrimarSql.Data.Processors;
 using PrimarSql.Data.Requesters;
 using PrimarSql.Data.Sources;
 
 namespace PrimarSql.Data.Providers
 {
-    internal sealed class ApiDataProvider : IDataProvider
+    internal sealed class ApiDataProvider : BaseDataProvider
     {
         private readonly TableDescription _tableDescription;
         private IRequester _requester;
-        private IProcessor _processor;
+        private object[] _current;
 
         public QueryContext Context { get; }
 
         public SelectQueryInfo QueryInfo { get; }
 
-        public object this[int i] => GetData(i);
+        public override bool HasRows => _requester.HasRows;
 
-        public bool HasRows => _requester.HasRows;
+        public override int RecordsAffected => -1;
 
-        public int RecordsAffected => -1;
-
-        public object[] Current { get; private set; }
+        public override object[] Current => _current;
 
         public AtomTableSource AtomTableSource => QueryInfo.TableSource as AtomTableSource;
-        
+
         public string TableName => AtomTableSource?.TableName;
 
         public string IndexName => AtomTableSource?.IndexName;
@@ -44,16 +39,11 @@ namespace PrimarSql.Data.Providers
 
             _tableDescription = context.GetTableDescription(TableName);
 
-            SetProcessor();
+            Processor = GetProcessor(QueryInfo);
             SetRequester();
         }
 
-        public DataTable GetSchemaTable()
-        {
-            return _processor.GetSchemaTable();
-        }
-
-        public object GetData(int ordinal)
+        public override object GetData(int ordinal)
         {
             var data = Current[ordinal];
 
@@ -65,40 +55,14 @@ namespace PrimarSql.Data.Providers
             };
         }
 
-        public DataRow GetDataRow(string name)
-        {
-            return _processor.GetDataRow(name);
-        }
-
-        public DataRow GetDataRow(int ordinal)
-        {
-            return _processor.GetDataRow(ordinal);
-        }
-
-        public bool Next()
+        public override bool Next()
         {
             var flag = _requester.Next();
-
-            Current = flag ? _processor.Process(_requester.Current) : null;
+            
+            Processor.Current = _requester.Current;
+            _current = flag ? Processor.Process() : null;
 
             return flag;
-        }
-
-        #region Intalize Processor/Requester
-        private void SetProcessor()
-        {
-            if (QueryInfo.Columns.FirstOrDefault() is StarColumn)
-            {
-                _processor = new StarProcessor();
-            }
-            else if (QueryInfo.Columns.All(c => c is PropertyColumn))
-            {
-                _processor = new ColumnProcessor(QueryInfo.Columns.Select(c => c as PropertyColumn));    
-            }
-            else
-            {
-                throw new NotSupportedException("Not supported column type");
-            }
         }
 
         private void SetRequester()
@@ -154,6 +118,5 @@ namespace PrimarSql.Data.Providers
                 generateResult.FilterExpression
             );
         }
-        #endregion
     }
 }

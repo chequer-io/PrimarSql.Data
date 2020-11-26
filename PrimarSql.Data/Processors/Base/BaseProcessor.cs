@@ -4,11 +4,17 @@ using System.Data.Common;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
+using PrimarSql.Data.Extensions;
+using PrimarSql.Data.Models.Columns;
 
 namespace PrimarSql.Data.Processors
 {
     internal abstract class BaseProcessor : IProcessor
     {
+        public virtual Dictionary<string, AttributeValue> Current { get; set; }
+
+        public abstract IColumn[] Columns { get; }
+        
         public abstract DataTable GetSchemaTable();
 
         public virtual DataRow GetDataRow(string name)
@@ -33,6 +39,8 @@ namespace PrimarSql.Data.Processors
             return matchedRows.FirstOrDefault();
         }
 
-        public abstract object[] Process(Dictionary<string, AttributeValue> row);
+        public abstract object[] Process();
+
+        public abstract Dictionary<string, AttributeValue> Filter();
     }
 }

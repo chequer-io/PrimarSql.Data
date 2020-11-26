@@ -15,9 +15,9 @@ namespace PrimarSql.Data.Planners
         
         public override DbDataReader Execute()
         {
-            return new PrimarSqlDataReader(
-                new ApiDataProvider(Context, QueryInfo)
-            );
+            var provider = DataProviderFactory.Create(Context, QueryInfo);
+
+            return new PrimarSqlDataReader(provider);
         }
     }
 }

@@ -1,10 +1,13 @@
 ﻿using System.Data;
 using Newtonsoft.Json.Linq;
+using PrimarSql.Data.Processors;
 
 namespace PrimarSql.Data.Providers
 {
     internal sealed class EmptyDataProvider : IDataProvider
     {
+        public IProcessor Processor { get; } = null;
+
         public object[] Current => null;
 
         public object this[int i] => null;

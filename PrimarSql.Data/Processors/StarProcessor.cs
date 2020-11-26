@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using Amazon.DynamoDBv2.Model;
-using Newtonsoft.Json.Linq;
+using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Processors
@@ -11,6 +10,8 @@ namespace PrimarSql.Data.Processors
     internal sealed class StarProcessor : BaseProcessor
     {
         private DataTable _schemaTable;
+
+        public override IColumn[] Columns { get; } = { new PropertyColumn("Document") };
 
         public override DataTable GetSchemaTable()
         {
@@ -23,9 +24,14 @@ namespace PrimarSql.Data.Processors
             return _schemaTable;
         }
 
-        public override object[] Process(Dictionary<string, AttributeValue> row)
+        public override object[] Process()
         {
-            return new object[] { row.ToJObject() };
+            return new object[] { Current.ToJObject() };
+        }
+
+        public override Dictionary<string, AttributeValue> Filter()
+        {
+            return Current;
         }
     }
 }

@@ -5,12 +5,15 @@ using System.Data.Common;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Models.Columns;
+using PrimarSql.Data.Processors;
 using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Providers
 {
     internal sealed class ListDataProvider : IDataProvider
     {
+        public IProcessor Processor { get; } = null;
+
         private DataTable _schemaTable;
         private readonly List<(string, Type)> _columns = new List<(string, Type)>();
         private readonly List<object[]> _rows = new List<object[]>();
