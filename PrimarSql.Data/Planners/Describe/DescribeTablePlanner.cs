@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners.Describe
@@ -16,9 +18,26 @@ namespace PrimarSql.Data.Planners.Describe
         {
             var provider = new ListDataProvider();
             var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
+            List<KeySchemaElement> keySchema = tableDescription.KeySchema;
+            List<AttributeDefinition> attributeDefinitions = tableDescription.AttributeDefinitions;
+            
+            var hashKeyName = keySchema
+                .First(schema => schema.KeyType == KeyType.HASH)
+                .AttributeName;
+            
+            var sortKeyName = keySchema
+                .FirstOrDefault(schema => schema.KeyType == KeyType.RANGE)?
+                .AttributeName;
+            
+            var hashKeyType = attributeDefinitions
+                .First(definition => definition.AttributeName == hashKeyName)
+                .AttributeType
+                .Value;
 
-            var hashKeyName = tableDescription.KeySchema.First(schema => schema.KeyType == KeyType.HASH).AttributeName;
-            var sortKeyName = tableDescription.KeySchema.FirstOrDefault(schema => schema.KeyType == KeyType.RANGE)?.AttributeName;
+            var sortKeyType = attributeDefinitions
+                .FirstOrDefault(definition => definition.AttributeName == sortKeyName)?
+                .AttributeType
+                .Value;
 
             provider.AddColumn("TableArn", typeof(string));
             provider.AddColumn("TableId", typeof(string));
@@ -30,7 +49,9 @@ namespace PrimarSql.Data.Planners.Describe
             provider.AddColumn("ItemCount", typeof(long));
             provider.AddColumn("CreationDateTime", typeof(DateTime));
             provider.AddColumn("HashKeyName", typeof(string));
+            provider.AddColumn("HashKeyType", typeof(string));
             provider.AddColumn("SortKeyName", typeof(string));
+            provider.AddColumn("SortKeyType", typeof(string));
             provider.AddColumn("BillingMode", typeof(string));
             provider.AddColumn("LastUpdateToPayPerRequestDateTime", typeof(DateTime));
 
@@ -45,7 +66,9 @@ namespace PrimarSql.Data.Planners.Describe
                 tableDescription.ItemCount,
                 tableDescription.CreationDateTime,
                 hashKeyName,
+                hashKeyType,
                 sortKeyName,
+                sortKeyType,
                 tableDescription.BillingModeSummary?.BillingMode.Value,
                 tableDescription.BillingModeSummary?.LastUpdateToPayPerRequestDateTime
             );
