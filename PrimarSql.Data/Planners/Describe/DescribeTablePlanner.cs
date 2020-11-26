@@ -28,7 +28,7 @@ namespace PrimarSql.Data.Planners.Describe
             provider.AddColumn("LocalIndexCount", typeof(long));
             provider.AddColumn("GlobalIndexCount", typeof(long));
             provider.AddColumn("ItemCount", typeof(long));
-            provider.AddColumn("CreateionDateTime", typeof(DateTime));
+            provider.AddColumn("CreationDateTime", typeof(DateTime));
             provider.AddColumn("HashKeyName", typeof(string));
             provider.AddColumn("SortKeyName", typeof(string));
             provider.AddColumn("BillingMode", typeof(string));
