@@ -28,6 +28,8 @@ namespace PrimarSql.Data.Requesters
 
         public bool HasRows { get; protected set; } = true;
 
+        public bool HasMoreRows { get; protected set; } = true;
+
         public Dictionary<string, AttributeValue> Current { get; protected set; }
 
         public void SetParameters(

@@ -32,11 +32,12 @@ namespace PrimarSql.Data.Requesters
             if (RemainedCount == 0 || (RemainedSkipCount != 0 && !SkipOffset()))
                 return false;
 
-            if (Items == null || Items.Count <= _index)
+            while (Items == null || Items.Count <= _index)
             {
-                if (!Fetch())
+                if (!HasMoreRows)
                     return false;
 
+                Fetch();
                 _index = 0;
             }
 
@@ -48,16 +49,17 @@ namespace PrimarSql.Data.Requesters
 
         protected virtual bool Fetch()
         {
-            if (!HasRows)
+            if (!HasRows || !HasMoreRows)
                 return false;
 
             var request = GetFetchRequest(GetRequest());
             var response = GetResponse(request);
 
             Items = response.Items;
-
+            ExclusiveStartKey = response.ExclusiveStartKey;
+            
             if (response.ExclusiveStartKey.Count == 0)
-                HasRows = false;
+                HasMoreRows = false;
 
             return Items.Count != 0;
         }
