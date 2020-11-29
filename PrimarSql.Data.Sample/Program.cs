@@ -57,7 +57,7 @@ namespace PrimarSql.Data.Sample
                     };
 
                     for (int i = 0; i < dbDataReader.FieldCount; i++)
-                        table.AddColumn($"[green]{dbDataReader.GetName(i)}[/]");
+                        table.AddColumn($"[green]{Markup.Escape(dbDataReader.GetName(i))}[/]");
 
                     while (dbDataReader.Read())
                     {
