@@ -134,14 +134,12 @@ namespace PrimarSql.Data.Visitors
 
                 if (int.TryParse(limitClause.limit.GetText(), out int limit))
                     queryInfo.Limit = limit;
-            }
 
-            if (context.offsetClause() != null)
-            {
-                var offsetClause = context.offsetClause();
-
-                if (int.TryParse(offsetClause.offset.GetText(), out int offset))
-                    queryInfo.Offset = offset;
+                if (limitClause.offset != null)
+                {
+                    if (int.TryParse(limitClause.offset.GetText(), out int offset))
+                        queryInfo.Offset = offset;
+                }
             }
 
             if (context.startKeyClause() != null)

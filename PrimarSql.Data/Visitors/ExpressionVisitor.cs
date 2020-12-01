@@ -62,8 +62,8 @@ namespace PrimarSql.Data.Visitors
                 case IsNullPredicateContext isNullPredicateContext:
                     return VisitIsNullPredicate(isNullPredicateContext);
 
-                case BinaryComparasionPredicateContext binaryComparasionPredicateContext:
-                    return VisitBinaryComparasionPredicate(binaryComparasionPredicateContext);
+                case BinaryComparisonPredicateContext binaryComparisonPredicateContext:
+                    return VisitBinaryComparasionPredicate(binaryComparisonPredicateContext);
 
                 case BetweenPredicateContext betweenPredicateContext:
                     return VisitBetweenPredicate(betweenPredicateContext);
@@ -129,7 +129,7 @@ namespace PrimarSql.Data.Visitors
             };
         }
 
-        public static IExpression VisitBinaryComparasionPredicate(BinaryComparasionPredicateContext context)
+        public static IExpression VisitBinaryComparasionPredicate(BinaryComparisonPredicateContext context)
         {
             return new LogicalExpression
             {
