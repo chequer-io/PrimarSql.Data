@@ -13,7 +13,8 @@ namespace PrimarSql.Data.Providers
         {
             if (queryInfo.TableSource is SubquerySource)
             {
-                return new SubqueryProvider(context, queryInfo);
+                throw new NotSupportedException("Subquery feature is not supported yet.");
+                // return new SubqueryProvider(context, queryInfo);
             }
 
             if (queryInfo.TableSource is AtomTableSource)
