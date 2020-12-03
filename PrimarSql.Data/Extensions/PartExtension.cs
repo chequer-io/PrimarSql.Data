@@ -21,7 +21,7 @@ namespace PrimarSql.Data.Extensions
                             sb.Append(".");
 
                         var identifier = identifierPart.Identifier;
-                        var needEscape = !Regex.IsMatch(identifier, @"[a-z_$0-9]*?[a-z_$]+?[a-z_$0-9]*", RegexOptions.IgnoreCase);
+                        var needEscape = !Regex.IsMatch(identifier, @"^[a-z_$0-9]*?[a-z_$]+?[a-z_$0-9]*$", RegexOptions.IgnoreCase);
 
                         sb.Append(needEscape ? $"'{identifier.Replace("'", "''")}'" : identifier);
 
