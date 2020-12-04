@@ -48,13 +48,30 @@ namespace PrimarSql.Data.Providers
         {
             var data = Current[ordinal];
 
-            return data switch
+            switch (data)
             {
-                null => DBNull.Value,
-                JValue jValue => jValue.Value,
-                int i => i,
-                _ => data.ToString()
-            };
+                case null:
+                    return DBNull.Value;
+
+                case JValue jValue:
+                    return jValue.Value;
+
+                case string _:
+                case short _:
+                case ushort _:
+                case int _:
+                case uint _:
+                case long _:
+                case ulong _:
+                case decimal _:
+                case double _:
+                case bool _:
+                case char _:        
+                    return data;
+
+                default:
+                    return data.ToString();
+            }
         }
 
         public override bool Next()
