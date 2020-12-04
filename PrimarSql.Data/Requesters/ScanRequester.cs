@@ -64,7 +64,7 @@ namespace PrimarSql.Data.Requesters
                 value = new EmptyEnumerable<Dictionary<string, AttributeValue>>(response.Count);
             else
                 value = response.Items;
-            
+
             return new RequestResponseData
             {
                 Items = value,
@@ -79,6 +79,7 @@ namespace PrimarSql.Data.Requesters
                 HasMoreRows = false;
                 return Client.DescribeTableAsync(TableName).Result.Table.ItemCount;
             }
+
             return base.RequestCount();
         }
     }

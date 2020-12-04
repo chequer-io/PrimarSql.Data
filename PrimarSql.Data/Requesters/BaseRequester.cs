@@ -16,6 +16,10 @@ namespace PrimarSql.Data.Requesters
 
         public ExpressionAttributeValue[] ExpressionAttributeValues { get; private set; }
 
+        public string HashKeyName { get; private set; }
+
+        public string SortKeyName { get; private set; }
+
         public HashKey HashKey { get; private set; }
 
         public SortKey SortKey { get; private set; }
@@ -39,6 +43,8 @@ namespace PrimarSql.Data.Requesters
             ExpressionAttributeValue[] expressionAttributeValues,
             HashKey hashKey,
             SortKey sortKey,
+            string hashKeyName,
+            string sortKeyName,
             string tableName,
             string indexName,
             string filterExpression
@@ -50,6 +56,8 @@ namespace PrimarSql.Data.Requesters
             ExpressionAttributeValues = expressionAttributeValues;
             HashKey = hashKey;
             SortKey = sortKey;
+            HashKeyName = hashKeyName;
+            SortKeyName = sortKeyName;
             TableName = tableName;
             IndexName = indexName;
             FilterExpression = filterExpression;

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Requesters
@@ -15,7 +16,7 @@ namespace PrimarSql.Data.Requesters
         protected int ReadCount { get; set; }
 
         protected int RemainedCount => QueryInfo.Limit == -1 ? -1 : QueryInfo.Limit - ReadCount;
-        
+
         protected List<Dictionary<string, AttributeValue>> Items { get; set; }
 
         protected Dictionary<string, AttributeValue> ExclusiveStartKey { get; set; }
@@ -53,12 +54,25 @@ namespace PrimarSql.Data.Requesters
             if (!HasRows || !HasMoreRows)
                 return false;
 
+            if (ReadCount == 0 && QueryInfo.HasStartKey)
+            {
+                ExclusiveStartKey = new Dictionary<string, AttributeValue>
+                {
+                    [HashKeyName] = QueryInfo.StartHashKey.Value.ToAttributeValue()
+                };
+
+                if (QueryInfo.StartSortKey != null)
+                {
+                    ExclusiveStartKey[SortKeyName] = QueryInfo.StartSortKey.Value.ToAttributeValue();
+                }
+            }
+
             var request = GetFetchRequest(GetRequest());
             var response = GetResponse(request);
 
             Items = response.Items.ToList();
             ExclusiveStartKey = response.ExclusiveStartKey;
-            
+
             if (response.ExclusiveStartKey.Count == 0)
                 HasMoreRows = false;
 
@@ -75,7 +89,7 @@ namespace PrimarSql.Data.Requesters
                 ExclusiveStartKey = response.ExclusiveStartKey;
 
                 var count = response.Items.Count();
-                
+
                 if (ExclusiveStartKey.Count == 0 || count == 0)
                     return false;
 
@@ -89,6 +103,7 @@ namespace PrimarSql.Data.Requesters
         {
             int count = 0;
             PreventData = true;
+
             while (Next())
             {
                 count++;

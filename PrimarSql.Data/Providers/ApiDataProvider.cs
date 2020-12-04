@@ -124,6 +124,8 @@ namespace PrimarSql.Data.Providers
                 generateResult.ExpressionAttributeValues,
                 generateResult.HashKey,
                 generateResult.SortKey,
+                generator.HashKeyName,
+                generator.SortKeyName,
                 TableName,
                 IndexName,
                 generateResult.FilterExpression

@@ -9,12 +9,16 @@ namespace PrimarSql.Data.Requesters
     internal interface IRequester
     {
         AmazonDynamoDBClient Client { get; }
-        
+
         SelectQueryInfo QueryInfo { get; }
 
         ExpressionAttributeName[] ExpressionAttributeNames { get; }
 
         ExpressionAttributeValue[] ExpressionAttributeValues { get; }
+
+        string HashKeyName { get; }
+
+        string SortKeyName { get; }
 
         HashKey HashKey { get; }
 
@@ -23,13 +27,13 @@ namespace PrimarSql.Data.Requesters
         string TableName { get; }
 
         string IndexName { get; }
-        
+
         string FilterExpression { get; }
-        
+
         bool HasRows { get; }
-        
+
         Dictionary<string, AttributeValue> Current { get; }
-        
+
         void SetParameters(
             AmazonDynamoDBClient client,
             SelectQueryInfo queryInfo,
@@ -37,6 +41,8 @@ namespace PrimarSql.Data.Requesters
             ExpressionAttributeValue[] expressionAttributeValues,
             HashKey hashKey,
             SortKey sortKey,
+            string hashKeyName,
+            string sortKeyName,
             string tableName,
             string indexName,
             string filterExpression
