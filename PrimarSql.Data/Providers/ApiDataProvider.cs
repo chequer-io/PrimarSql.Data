@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Planners;
+using PrimarSql.Data.Processors;
 using PrimarSql.Data.Requesters;
 using PrimarSql.Data.Sources;
 
@@ -57,8 +58,18 @@ namespace PrimarSql.Data.Providers
 
         public override bool Next()
         {
+            if (Processor is CountFunctionProcessor processor)
+            {
+                if (processor.Read)
+                    return false;
+
+                processor.Read = true;
+                _current = new object[] { _requester.RequestCount()};
+                return true;
+            }
+
             var flag = _requester.Next();
-            
+
             Processor.Current = _requester.Current;
             _current = flag ? Processor.Process() : null;
 

@@ -48,6 +48,10 @@ namespace PrimarSql.Data.Providers
             {
                 return new ColumnProcessor(queryInfo.Columns.Select(c => c as PropertyColumn));
             }
+            else if (queryInfo.Columns.FirstOrDefault() is CountFunctionColumn)
+            {
+                return new CountFunctionProcessor();
+            }
             else
             {
                 throw new NotSupportedException("Not supported column type");

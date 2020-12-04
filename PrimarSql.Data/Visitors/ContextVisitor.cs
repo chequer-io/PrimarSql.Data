@@ -167,7 +167,12 @@ namespace PrimarSql.Data.Visitors
                 };
             }
 
-            return context.selectElement().Select(VisitSelectElement).ToArray();
+            IColumn[] columns = context.selectElement().Select(VisitSelectElement).ToArray();
+
+            if (columns.Any(c => c is CountFunctionColumn) && columns.Length > 1)
+                throw new InvalidOperationException("Count function can only use in single column.");
+            
+            return columns;
         }
 
         public static IColumn VisitSelectElement(SelectElementContext context)
@@ -181,8 +186,13 @@ namespace PrimarSql.Data.Visitors
                         Alias = IdentifierUtility.Unescape(selectColumnElementContext.alias?.GetText()),
                     };
 
-                case SelectFunctionElementContext _:
+                case SelectFunctionElementContext selectFunctionElementContext:
+                {
+                    if (selectFunctionElementContext.builtInFunctionCall() is CountFunctionCallContext)
+                        return new CountFunctionColumn();
+                    
                     return VisitorHelper.ThrowNotSupportedFeature<IColumn>("Select Element Function");
+                }
 
                 case SelectExpressionElementContext _:
                     return VisitorHelper.ThrowNotSupportedFeature<IColumn>("Select Element Expression");

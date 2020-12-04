@@ -23,7 +23,7 @@ namespace PrimarSql.Data.Requesters
         public string TableName { get; private set; }
 
         public string IndexName { get; private set; }
-        
+
         public string FilterExpression { get; private set; }
 
         public bool HasRows { get; protected set; } = true;
@@ -53,7 +53,7 @@ namespace PrimarSql.Data.Requesters
             TableName = tableName;
             IndexName = indexName;
             FilterExpression = filterExpression;
-            
+
             Initialize();
         }
 
@@ -62,5 +62,7 @@ namespace PrimarSql.Data.Requesters
         }
 
         public abstract bool Next();
+
+        public abstract long RequestCount();
     }
 }

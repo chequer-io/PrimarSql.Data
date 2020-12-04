@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Text;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models;
@@ -156,13 +155,14 @@ namespace PrimarSql.Data.Visitors
                 case BinaryExpressionAtomContext binaryExpressionAtomContext:
                 {
                     var base64Str = VisitStringLiteral(binaryExpressionAtomContext.stringLiteral()).Value.ToString();
+
                     return new LiteralExpression
                     {
                         Value = Convert.FromBase64String(base64Str),
                         ValueType = LiteralValueType.Binary
                     };
                 }
-                
+
                 case FullColumnNameExpressionAtomContext fullColumnNameExpressionAtomContext:
                     return VisitFullColumnNameExpressionAtom(fullColumnNameExpressionAtomContext);
 
@@ -260,7 +260,7 @@ namespace PrimarSql.Data.Visitors
                 case NegativeDecimalLiteralConstantContext negativeDecimalLiteralConstantContext:
                     return new LiteralExpression
                     {
-                        Value = long.Parse(negativeDecimalLiteralConstantContext.decimalLiteral().GetText()),
+                        Value = long.Parse("-" + negativeDecimalLiteralConstantContext.decimalLiteral().GetText()),
                         ValueType = LiteralValueType.Numeric
                     };
 
@@ -270,7 +270,7 @@ namespace PrimarSql.Data.Visitors
                         Value = bool.Parse(booleanLiteralConstantContext.GetText()),
                         ValueType = LiteralValueType.Boolean
                     };
-                
+
                 case NullConstantContext nullConstantContext:
                     return new LiteralExpression
                     {

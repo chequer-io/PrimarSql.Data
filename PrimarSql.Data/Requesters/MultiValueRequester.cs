@@ -81,5 +81,16 @@ namespace PrimarSql.Data.Requesters
 
             return true;
         }
+
+        public override long RequestCount()
+        {
+            int count = 0;
+            while (Next())
+            {
+                count++;
+            }
+
+            return count;
+        }
     }
 }

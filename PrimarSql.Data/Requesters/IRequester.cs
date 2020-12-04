@@ -43,5 +43,7 @@ namespace PrimarSql.Data.Requesters
         );
 
         bool Next();
+
+        long RequestCount();
     }
 }
