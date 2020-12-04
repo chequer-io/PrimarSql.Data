@@ -52,6 +52,7 @@ namespace PrimarSql.Data.Providers
             {
                 null => DBNull.Value,
                 JValue jValue => jValue.Value,
+                int i => i,
                 _ => data.ToString()
             };
         }
@@ -64,7 +65,7 @@ namespace PrimarSql.Data.Providers
                     return false;
 
                 processor.Read = true;
-                _current = new object[] { _requester.RequestCount()};
+                _current = new object[] { _requester.RequestCount() };
                 return true;
             }
 
