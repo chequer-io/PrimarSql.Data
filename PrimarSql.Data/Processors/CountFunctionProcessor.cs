@@ -11,16 +11,25 @@ namespace PrimarSql.Data.Processors
     {
         private DataTable _schemaTable;
 
+        public string Alias { get; }
+
+        public string Name => string.IsNullOrEmpty(Alias) ? "count(*)" : Alias;
+        
         public bool Read { get; set; } = false;
 
         public override IColumn[] Columns { get; } = { new PropertyColumn("count(*)") };
 
+        public CountFunctionProcessor(string alias)
+        {
+            Alias = alias;
+        }
+        
         public override DataTable GetSchemaTable()
         {
             if (_schemaTable == null)
             {
                 _schemaTable = DataProviderUtility.GetNewSchemaTable();
-                _schemaTable.Rows.Add("count(*)", 0, typeof(object), null, false);
+                _schemaTable.Rows.Add(Name, 0, typeof(object), null, false);
             }
 
             return _schemaTable;

@@ -63,6 +63,8 @@ namespace PrimarSql.Data.Requesters
 
         public abstract bool Next();
 
+        protected bool PreventData { get; set; } = false;
+
         public abstract long RequestCount();
     }
 }

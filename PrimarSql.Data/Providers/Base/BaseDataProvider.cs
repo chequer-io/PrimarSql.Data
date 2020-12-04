@@ -48,9 +48,9 @@ namespace PrimarSql.Data.Providers
             {
                 return new ColumnProcessor(queryInfo.Columns.Select(c => c as PropertyColumn));
             }
-            else if (queryInfo.Columns.FirstOrDefault() is CountFunctionColumn)
+            else if (queryInfo.Columns.FirstOrDefault() is CountFunctionColumn countFunctionColumn)
             {
-                return new CountFunctionProcessor();
+                return new CountFunctionProcessor(countFunctionColumn.Alias);
             }
             else
             {

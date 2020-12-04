@@ -40,7 +40,7 @@ namespace PrimarSql.Data.Requesters
             {
                 TableName = TableName,
                 ConsistentRead = QueryInfo.UseStronglyConsistent,
-                Key = attr,
+                Key = attr
             }).Result;
 
             if (getItemResponse.Item.Count == 0)

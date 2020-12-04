@@ -6,6 +6,6 @@ namespace PrimarSql.Data.Models.Columns
     {
         public IPart[] Name => Array.Empty<IPart>();
 
-        public string Alias => "";
+        public string Alias { get; set; }
     }
 }

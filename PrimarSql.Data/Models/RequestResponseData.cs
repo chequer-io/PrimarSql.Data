@@ -5,7 +5,7 @@ namespace PrimarSql.Data.Models
 {
     internal sealed class RequestResponseData
     {
-        public List<Dictionary<string, AttributeValue>> Items { get; set; }
+        public IEnumerable<Dictionary<string, AttributeValue>> Items { get; set; }
         
         public Dictionary<string, AttributeValue> ExclusiveStartKey { get; set; }
     }

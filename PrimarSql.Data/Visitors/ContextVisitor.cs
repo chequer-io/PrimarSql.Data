@@ -189,7 +189,10 @@ namespace PrimarSql.Data.Visitors
                 case SelectFunctionElementContext selectFunctionElementContext:
                 {
                     if (selectFunctionElementContext.builtInFunctionCall() is CountFunctionCallContext)
-                        return new CountFunctionColumn();
+                        return new CountFunctionColumn
+                        {
+                            Alias = IdentifierUtility.Unescape(selectFunctionElementContext.alias?.GetText()),
+                        };
                     
                     return VisitorHelper.ThrowNotSupportedFeature<IColumn>("Select Element Function");
                 }

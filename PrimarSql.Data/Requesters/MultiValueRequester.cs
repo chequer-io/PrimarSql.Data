@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Models;
@@ -55,7 +56,7 @@ namespace PrimarSql.Data.Requesters
             var request = GetFetchRequest(GetRequest());
             var response = GetResponse(request);
 
-            Items = response.Items;
+            Items = response.Items.ToList();
             ExclusiveStartKey = response.ExclusiveStartKey;
             
             if (response.ExclusiveStartKey.Count == 0)
@@ -73,10 +74,12 @@ namespace PrimarSql.Data.Requesters
 
                 ExclusiveStartKey = response.ExclusiveStartKey;
 
-                if (ExclusiveStartKey.Count == 0 || response.Items.Count == 0)
+                var count = response.Items.Count();
+                
+                if (ExclusiveStartKey.Count == 0 || count == 0)
                     return false;
 
-                RemainedSkipCount -= response.Items.Count;
+                RemainedSkipCount -= count;
             }
 
             return true;
@@ -85,6 +88,7 @@ namespace PrimarSql.Data.Requesters
         public override long RequestCount()
         {
             int count = 0;
+            PreventData = true;
             while (Next())
             {
                 count++;

@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Models;
 
@@ -46,6 +48,9 @@ namespace PrimarSql.Data.Requesters
             if (RemainedCount != -1)
                 request.Limit = RemainedCount;
 
+            if (PreventData)
+                request.Select = Select.COUNT;
+
             return request;
         }
 
@@ -53,9 +58,16 @@ namespace PrimarSql.Data.Requesters
         {
             var response = Client.ScanAsync(request).Result;
 
+            IEnumerable<Dictionary<string, AttributeValue>> value;
+
+            if (PreventData)
+                value = new EmptyEnumerable<Dictionary<string, AttributeValue>>(response.Count);
+            else
+                value = response.Items;
+            
             return new RequestResponseData
             {
-                Items = response.Items,
+                Items = value,
                 ExclusiveStartKey = response.LastEvaluatedKey
             };
         }
