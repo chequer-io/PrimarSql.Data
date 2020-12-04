@@ -71,16 +71,5 @@ namespace PrimarSql.Data.Requesters
                 ExclusiveStartKey = response.LastEvaluatedKey
             };
         }
-
-        public override long RequestCount()
-        {
-            if (string.IsNullOrWhiteSpace(FilterExpression))
-            {
-                HasMoreRows = false;
-                return Client.DescribeTableAsync(TableName).Result.Table.ItemCount;
-            }
-
-            return base.RequestCount();
-        }
     }
 }
