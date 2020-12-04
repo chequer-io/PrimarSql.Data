@@ -14,8 +14,13 @@ namespace PrimarSql.Data.Providers
 
         public bool HasRows => false;
 
-        public int RecordsAffected => 0;
+        public int RecordsAffected { get; }
 
+        public EmptyDataProvider(int recordsAffected = 0)
+        {
+            RecordsAffected = recordsAffected;
+        }
+        
         public object GetData(int ordinal)
         {
             return null;

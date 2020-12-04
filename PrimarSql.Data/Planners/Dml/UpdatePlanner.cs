@@ -10,6 +10,7 @@ using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Providers;
 using PrimarSql.Data.Sources;
+using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Planners
 {
@@ -85,10 +86,10 @@ namespace PrimarSql.Data.Planners
                     ExpressionAttributeValues = ExpressionAttributeValues
                 };
 
-                request.Key.Add(reader.GetName(0), reader[0].ToAttributeValue());
+                request.Key.Add(IdentifierUtility.Unescape(reader.GetName(0)), reader[0].ToAttributeValue());
 
                 if (hasSortKey)
-                    request.Key.Add(reader.GetName(1), reader[1].ToAttributeValue());
+                    request.Key.Add(IdentifierUtility.Unescape(reader.GetName(1)), reader[1].ToAttributeValue());
 
                 try
                 {
