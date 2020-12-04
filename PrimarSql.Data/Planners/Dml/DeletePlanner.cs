@@ -14,6 +14,8 @@ namespace PrimarSql.Data.Planners
 {
     internal sealed class DeletePlanner : QueryPlanner<DeleteQueryInfo>
     {
+        private int _deletedCount = 0;
+        
         public DeletePlanner(DeleteQueryInfo queryInfo) : base(queryInfo)
         {
         }
@@ -76,9 +78,11 @@ namespace PrimarSql.Data.Planners
                     var innerException = e.InnerExceptions[0];
                     throw new Exception($"Error while delete Item (Key: {reader.GetName(0)}){Environment.NewLine}{innerException.Message}");
                 }
+                
+                _deletedCount++;
             }
 
-            return new PrimarSqlDataReader(new EmptyDataProvider());
+            return new PrimarSqlDataReader(new EmptyDataProvider(_deletedCount));
         }
     }
 }

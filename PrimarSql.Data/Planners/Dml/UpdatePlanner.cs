@@ -16,6 +16,8 @@ namespace PrimarSql.Data.Planners
 {
     internal sealed class UpdatePlanner : QueryPlanner<UpdateQueryInfo>
     {
+        private int _updatedCount = 0;
+        
         public UpdatePlanner(UpdateQueryInfo queryInfo)
         {
             QueryInfo = queryInfo;
@@ -100,9 +102,11 @@ namespace PrimarSql.Data.Planners
                     var innerException = e.InnerExceptions[0];
                     throw new Exception($"Error while update Item (Key: {reader.GetName(0)}){Environment.NewLine}{innerException.Message}");
                 }
+
+                _updatedCount++;
             }
 
-            return new PrimarSqlDataReader(new EmptyDataProvider());
+            return new PrimarSqlDataReader(new EmptyDataProvider(_updatedCount));
         }
     }
 }

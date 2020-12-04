@@ -46,7 +46,7 @@ namespace PrimarSql.Data.Planners
                 _insertCount++;
             }
 
-            return new PrimarSqlDataReader(new EmptyDataProvider());
+            return new PrimarSqlDataReader(new EmptyDataProvider(_insertCount));
         }
         
         private void SetConditionalExpression()

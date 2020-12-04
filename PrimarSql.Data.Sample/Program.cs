@@ -49,7 +49,7 @@ namespace PrimarSql.Data.Sample
                 {
                     var query = AnsiConsole.Prompt(new TextPrompt<string>("[blue]Query[/]"));
                     var command = connection.CreateDbCommand(query);
-                    var dbDataReader = command.ExecuteReader();
+                    using var dbDataReader = command.ExecuteReader();
 
                     var table = new Table
                     {
@@ -79,6 +79,7 @@ namespace PrimarSql.Data.Sample
                     }
 
                     AnsiConsole.Render(table);
+                    AnsiConsole.MarkupLine($"RecordsAffected: [green]{dbDataReader.RecordsAffected}[/]");
                 }
                 catch (AggregateException e)
                 {
