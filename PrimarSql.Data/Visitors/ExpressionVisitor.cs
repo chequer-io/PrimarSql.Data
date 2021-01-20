@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions;
+using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Utilities;
 using static PrimarSql.Internal.PrimarSqlParser;
@@ -26,6 +29,27 @@ namespace PrimarSql.Data.Visitors
 
             return null;
         }
+
+        #region JsonObject
+        public static Dictionary<string, AttributeValue> VisitJsonObject(JsonObjectContext context)
+        {
+            return context.jsonValuePair()
+                .Select(VisitJsonValuePair)
+                .ToDictionary(kv => kv.Key, kv => kv.Value);
+        }
+
+        public static KeyValuePair<string, AttributeValue> VisitJsonValuePair(JsonValuePairContext context)
+        {
+            var key = context.stringLiteral().GetText()[1..^1];
+
+            return new KeyValuePair<string, AttributeValue>(key, VisitJsonValue(context.jsonValue()));
+        }
+
+        public static AttributeValue VisitJsonValue(JsonValueContext context)
+        {
+            return JToken.Parse(context.GetText()).ToAttributeValue();
+        }
+        #endregion
 
         public static UnaryExpression VisitNotExpression(NotExpressionContext notExpressionContext)
         {
@@ -288,6 +312,25 @@ namespace PrimarSql.Data.Visitors
             {
                 Value = IdentifierUtility.Unescape(context.GetText()),
                 ValueType = LiteralValueType.String
+            };
+        }
+
+        public static MultipleExpression VisitArrayExpression(ArrayExpressionContext context)
+        {
+            return new MultipleExpression
+            {
+                Expressions = context.constant().Select(VisitConstant).Cast<IExpression>().ToArray()
+            };
+        }
+
+        public static ArrayAppendExpression VisitArrayAddExpression(ArrayAddExpressionContext context)
+        {
+            return new ArrayAppendExpression
+            {
+                AppendItem = new MultipleExpression
+                {
+                    Expressions = context.constant().Select(VisitConstant).Cast<IExpression>().ToArray()
+                }
             };
         }
 

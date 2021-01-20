@@ -17,7 +17,7 @@ namespace PrimarSql.Data.Planners
     internal sealed class UpdatePlanner : QueryPlanner<UpdateQueryInfo>
     {
         private int _updatedCount = 0;
-        
+
         public UpdatePlanner(UpdateQueryInfo queryInfo)
         {
             QueryInfo = queryInfo;
@@ -41,23 +41,69 @@ namespace PrimarSql.Data.Planners
 
         private string GetUpdateExpression()
         {
-            var sb = new StringBuilder("SET");
-            
-            foreach ((IPart[] parts, var expression) in QueryInfo.UpdatedElements)
-            {
-                // TODO: Support function expression for UpdateExpression
-                if (!(expression is LiteralExpression literalExpression))
-                    throw new InvalidOperationException($"Not Supported '{expression.GetType().Name}'.");
-                    
-                var name = GetAttributeName(parts.ToName());
-                var value = GetAttributeValue(literalExpression.Value.ToAttributeValue());
+            if (!QueryInfo.UpdatedElements.Any())
+                return string.Empty;
 
-                sb.Append($" {name} = {value}");
+            bool isRemove;
+
+            if (QueryInfo.UpdatedElements.All(x => x.IsRemove))
+                isRemove = true;
+            else if (QueryInfo.UpdatedElements.All(x => !x.IsRemove))
+                isRemove = false;
+            else
+                throw new InvalidOperationException("Update element cannot be different type between elements.");
+
+            var sb = new StringBuilder(isRemove ? "REMOVE" : "SET");
+
+            foreach (var element in QueryInfo.UpdatedElements)
+            {
+                var name = GetAttributeName(element.Name.ToName());
+
+                if (isRemove)
+                {
+                    sb.Append($" {name},");
+                }
+                else
+                {
+                    sb.Append($" {name} = {GetValue(element.Value)},");
+                }
             }
 
+            sb.Remove(sb.Length - 1, 1);
             return sb.ToString();
         }
-        
+
+        private string GetValue(IExpression expression)
+        {
+            AttributeValue value;
+
+            // TODO: Support function expression for UpdateExpression
+            switch (expression)
+            {
+                case LiteralExpression literalExpression:
+                    value = literalExpression.Value.ToAttributeValue();
+                    break;
+
+                case MultipleExpression multipleExpression:
+                    if (!multipleExpression.Expressions.All(x => x is LiteralExpression))
+                        throw new InvalidOperationException("MultipleExpression contains only support LiteralExpression");
+
+                    value = multipleExpression.Expressions
+                        .Cast<LiteralExpression>()
+                        .Select(x => x.Value.ToAttributeValue()).ToAttributeValue();
+
+                    break;
+
+                case ArrayAppendExpression arrayAppendExpression:
+                    return $"list_append({string.Join(", ", arrayAppendExpression.AppendItem.Expressions.Select(GetValue))})";
+
+                default:
+                    throw new InvalidOperationException($"Not Supported '{expression.GetType().Name}'.");
+            }
+
+            return GetAttributeValue(value);
+        }
+
         public override DbDataReader Execute()
         {
             var selectQueryInfo = new SelectQueryInfo
@@ -77,7 +123,7 @@ namespace PrimarSql.Data.Planners
             var reader = planner.Execute();
             bool hasSortKey = selectQueryInfo.Columns.Length == 2;
             string updateExpression = GetUpdateExpression();
-            
+
             while (reader.Read())
             {
                 var request = new UpdateItemRequest

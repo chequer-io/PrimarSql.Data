@@ -171,7 +171,7 @@ namespace PrimarSql.Data.Visitors
 
             if (columns.Any(c => c is CountFunctionColumn) && columns.Length > 1)
                 throw new InvalidOperationException("Count function can only use in single column.");
-            
+
             return columns;
         }
 
@@ -193,7 +193,7 @@ namespace PrimarSql.Data.Visitors
                         {
                             Alias = IdentifierUtility.Unescape(selectFunctionElementContext.alias?.GetText()),
                         };
-                    
+
                     return VisitorHelper.ThrowNotSupportedFeature<IColumn>("Select Element Function");
                 }
 
@@ -261,13 +261,25 @@ namespace PrimarSql.Data.Visitors
 
         public static void VisitInsertStatementValue(InsertStatementValueContext context, InsertQueryInfo queryInfo)
         {
-            if (context.selectStatement() != null)
+            switch (context)
             {
-                queryInfo.SelectQueryInfo = VisitSelectStatement(context.selectStatement());
-            }
-            else
-            {
-                queryInfo.Rows = context.expressionsWithDefaults().Select(VisitExpressionsWithDefault);
+                case SubqueryInsertStatementContext subqueryContext:
+                {
+                    queryInfo.SelectQueryInfo = VisitSelectStatement(subqueryContext.selectStatement());
+                    break;
+                }
+
+                case ExpressionInsertStatementContext expressionContext:
+                {
+                    queryInfo.Rows = expressionContext.expressionsWithDefaults().Select(VisitExpressionsWithDefault);
+                    break;
+                }
+
+                case JsonInsertStatementContext jsonContext:
+                {
+                    queryInfo.JsonValues = jsonContext.jsonObject().Select(ExpressionVisitor.VisitJsonObject);
+                    break;
+                }
             }
         }
 
@@ -297,7 +309,7 @@ namespace PrimarSql.Data.Visitors
             var queryInfo = new UpdateQueryInfo
             {
                 TableName = VisitTableName(context.tableName()),
-                UpdatedElements = context.updatedElement().Select(VisitUpdateElement),
+                UpdatedElements = VisitUpdateItem(context.updateItem()),
                 WhereExpression = context.expression() != null ?
                     ExpressionVisitor.VisitExpression(context.expression())
                     : null
@@ -314,12 +326,58 @@ namespace PrimarSql.Data.Visitors
             return queryInfo;
         }
 
-        public static (IPart[], IExpression) VisitUpdateElement(UpdatedElementContext context)
+        public static IEnumerable<UpdateElement> VisitUpdateItem(UpdateItemContext context)
+        {
+            if (context.updateRemoveItem() != null)
+            {
+                return VisitUpdateRemoveItem(context.updateRemoveItem());
+            }
+
+            return VisitUpdateSetItem(context.updateSetItem());
+        }
+
+        public static IEnumerable<UpdateElement> VisitUpdateSetItem(UpdateSetItemContext context)
+        {
+            return context.updatedElement().Select(VisitUpdatedElement);
+        }
+
+        public static IEnumerable<UpdateElement> VisitUpdateRemoveItem(UpdateRemoveItemContext context)
+        {
+            return context.removedElement()
+                .Select(e => e.fullColumnName())
+                .Select(ExpressionVisitor.VisitFullColumnName)
+                .Select(x => new UpdateElement
+                {
+                    Name = x.Name,
+                    Value = null
+                });
+        }
+
+        public static UpdateElement VisitUpdatedElement(UpdatedElementContext context)
         {
             var columnName = ExpressionVisitor.VisitFullColumnName(context.fullColumnName());
-            var expression = ExpressionVisitor.VisitExpression(context.expression());
+            IExpression expression;
 
-            return (columnName.Name, expression);
+            if (context.expression() != null)
+                expression = ExpressionVisitor.VisitExpression(context.expression());
+            else if (context.arrayExpression() != null)
+                expression = ExpressionVisitor.VisitArrayExpression(context.arrayExpression());
+            else if (context.arrayAddExpression() != null)
+                expression = ExpressionVisitor.VisitArrayAddExpression(context.arrayAddExpression());
+            else
+            {
+                expression = new LiteralExpression
+                {
+                    Value = null,
+                    ValueType = LiteralValueType.Null
+                };
+            }
+
+            return new UpdateElement
+            {
+                Name = columnName.Name,
+                Value = expression,
+            };
         }
         #endregion
 

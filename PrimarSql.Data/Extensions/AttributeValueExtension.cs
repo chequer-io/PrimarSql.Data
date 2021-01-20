@@ -29,7 +29,7 @@ namespace PrimarSql.Data.Extensions
 
             if (value.B != null)
                 return value.B.ToArray();
-            
+
             if (!string.IsNullOrEmpty(value.N))
                 return double.Parse(value.N);
 
@@ -57,6 +57,7 @@ namespace PrimarSql.Data.Extensions
                 JObject jObject => jObject.ToAttributeValue(),
                 byte[] bytes => bytes.ToAttributeValue(),
                 DBNull dbNull => dbNull.ToAttributeValue(),
+                IEnumerable<object> oList => oList.ToAttributeValue(),
                 _ => GetNullAttributeValue()
             };
         }
@@ -165,6 +166,14 @@ namespace PrimarSql.Data.Extensions
             };
         }
 
+        public static AttributeValue ToAttributeValue(this IEnumerable<AttributeValue> values)
+        {
+            return new AttributeValue
+            {
+                L = values.ToList()
+            };
+        }
+
         public static AttributeValue ToAttributeValue(this JToken jToken)
         {
             return jToken switch
@@ -207,7 +216,7 @@ namespace PrimarSql.Data.Extensions
                 B = new MemoryStream(bytes)
             };
         }
-        
+
         public static AttributeValue ToAttributeValue(this DBNull _)
         {
             return new AttributeValue

@@ -23,7 +23,7 @@ namespace PrimarSql.Data.Models
             return GetEnumerator();
         }
 
-        private class EmptyEnumerator<T> : IEnumerator<T> where T : class
+        private class EmptyEnumerator<TType> : IEnumerator<TType> where TType : class
         {
             private int _currentCount = 0;
             
@@ -50,7 +50,7 @@ namespace PrimarSql.Data.Models
                 throw new NotSupportedException();
             }
 
-            public T Current => null;
+            public TType Current => null;
 
             object IEnumerator.Current => Current;
 

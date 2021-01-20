@@ -17,7 +17,7 @@ namespace PrimarSql.Data.Utilities
         {
             var (key, value) = kv;
             
-            return new JProperty(key, ToJToken(value));
+            return new JProperty(key, value.ToJToken());
         }
         
         // TODO: B(Binary), BS(Binary List) Test
