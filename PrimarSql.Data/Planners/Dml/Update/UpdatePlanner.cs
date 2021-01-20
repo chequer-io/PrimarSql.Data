@@ -65,7 +65,7 @@ namespace PrimarSql.Data.Planners
                 }
                 else
                 {
-                    sb.Append($" {name} = {GetValue(element.Value)},");
+                    sb.Append($" {name} = {GetValue(element.Value, name)},");
                 }
             }
 
@@ -73,7 +73,7 @@ namespace PrimarSql.Data.Planners
             return sb.ToString();
         }
 
-        private string GetValue(IExpression expression)
+        private string GetValue(IExpression expression, string name = null)
         {
             AttributeValue value;
 
@@ -95,7 +95,7 @@ namespace PrimarSql.Data.Planners
                     break;
 
                 case ArrayAppendExpression arrayAppendExpression:
-                    return $"list_append({string.Join(", ", arrayAppendExpression.AppendItem.Expressions.Select(GetValue))})";
+                    return $"list_append({name}, {GetValue(arrayAppendExpression.AppendItem)})";
 
                 default:
                     throw new InvalidOperationException($"Not Supported '{expression.GetType().Name}'.");
