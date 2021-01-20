@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Data.Common;
 using Amazon.DynamoDBv2;
 using System.Linq;
+using System.Text;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Models;
+using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Planners
@@ -37,6 +39,30 @@ namespace PrimarSql.Data.Planners
             ExpressionAttributeNames[attributeName.Key] = attributeName.Value;
 
             return attributeName.Key;
+        }
+
+        protected string GetAttributeName(IEnumerable<IPart> rawName)
+        {
+            var sb = new StringBuilder();
+
+            foreach (var part in rawName)
+            {
+                switch (part)
+                {
+                    case IdentifierPart identifierPart:
+                        if (sb.Length != 0)
+                            sb.Append(".");
+                        
+                        sb.Append(GetAttributeName(identifierPart.Identifier));
+                        break;
+                    
+                    case IndexPart indexPart:
+                        sb.Append($"[{indexPart.Index}]");
+                        break;
+                }
+            }
+
+            return sb.ToString();
         }
 
         protected string GetAttributeValue(AttributeValue rawValue)

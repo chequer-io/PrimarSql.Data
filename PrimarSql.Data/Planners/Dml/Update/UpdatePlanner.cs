@@ -57,7 +57,7 @@ namespace PrimarSql.Data.Planners
 
             foreach (var element in QueryInfo.UpdatedElements)
             {
-                var name = GetAttributeName(element.Name.ToName());
+                var name = GetAttributeName(element.Name);
 
                 if (isRemove)
                 {
