@@ -114,6 +114,10 @@ namespace PrimarSql.Data.Planners
                 Columns = GetColumns(),
             };
 
+            // TODO: Performance issue, need to performance enhancement.
+            if (QueryInfo.WhereExpression == null)
+                throw new InvalidOperationException("Update not support without where expression.");
+
             var planner = new SelectPlanner
             {
                 QueryInfo = selectQueryInfo,
