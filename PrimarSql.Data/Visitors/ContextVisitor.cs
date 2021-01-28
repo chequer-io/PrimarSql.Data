@@ -124,6 +124,9 @@ namespace PrimarSql.Data.Visitors
 
             if (context.orderClause() != null)
             {
+                if (queryInfo.WhereExpression == null)
+                    throw new NotSupportedException("DynamoDB Not support ORDER clause without condition expression.");
+
                 if (context.orderClause().DESC() != null)
                     queryInfo.OrderDescend = true;
             }
