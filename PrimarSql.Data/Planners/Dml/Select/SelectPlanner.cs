@@ -8,11 +8,11 @@ namespace PrimarSql.Data.Planners
         public SelectPlanner()
         {
         }
-        
+
         public SelectPlanner(SelectQueryInfo queryInfo) : base(queryInfo)
         {
         }
-        
+
         public override DbDataReader Execute()
         {
             var provider = DataProviderFactory.Create(Context, QueryInfo);

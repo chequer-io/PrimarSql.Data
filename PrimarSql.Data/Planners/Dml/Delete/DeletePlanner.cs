@@ -15,7 +15,7 @@ namespace PrimarSql.Data.Planners
     internal sealed class DeletePlanner : QueryPlanner<DeleteQueryInfo>
     {
         private int _deletedCount = 0;
-        
+
         public DeletePlanner(DeleteQueryInfo queryInfo) : base(queryInfo)
         {
         }
@@ -46,6 +46,10 @@ namespace PrimarSql.Data.Planners
                 Columns = GetColumns(),
             };
 
+            // TODO: Performance issue, need to performance enhancement.
+            if (QueryInfo.WhereExpression == null)
+                throw new InvalidOperationException("Update not support without where expression.");
+
             var planner = new SelectPlanner
             {
                 QueryInfo = selectQueryInfo,
@@ -54,7 +58,7 @@ namespace PrimarSql.Data.Planners
 
             var reader = planner.Execute();
             bool hasSortKey = selectQueryInfo.Columns.Length == 2;
-            
+
             while (reader.Read())
             {
                 var request = new DeleteItemRequest
@@ -78,7 +82,7 @@ namespace PrimarSql.Data.Planners
                     var innerException = e.InnerExceptions[0];
                     throw new Exception($"Error while delete Item (Key: {reader.GetName(0)}){Environment.NewLine}{innerException.Message}");
                 }
-                
+
                 _deletedCount++;
             }
 

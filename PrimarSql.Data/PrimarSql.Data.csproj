@@ -13,7 +13,7 @@
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
         <RepositoryUrl>https://github.com/chequer-io/PrimarSql.Data</RepositoryUrl>
         <PackageProjectUrl>https://github.com/chequer-io/PrimarSql.Data</PackageProjectUrl>
-        <Version>1.1.8</Version>
+        <Version>1.1.9</Version>
         <PackageIcon>Logo.png</PackageIcon>
         <PackageTags>sql;primarsql;dynamodb;nosql;ado.net;connector;primarsql.data</PackageTags>
     </PropertyGroup>
@@ -21,10 +21,10 @@
     <ItemGroup>
         <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.5.3.4" />
         <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+        <PackageReference Include="PrimarSql" Version="1.2.2" />
 
         <None Include="..\Logo.png" PackagePath="" Pack="True" />
         <None Include="..\LICENSE" PackagePath="" Pack="True" />
-        <PackageReference Include="PrimarSql" Version="1.2.0" />
     </ItemGroup>
 
 </Project>
