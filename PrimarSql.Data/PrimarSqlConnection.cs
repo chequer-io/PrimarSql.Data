@@ -2,7 +2,9 @@
 using System.Data;
 using System.Data.Common;
 using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
 using PrimarSql.Data.Extensions;
 
 namespace PrimarSql.Data
@@ -56,7 +58,17 @@ namespace PrimarSql.Data
             {
                 _state = ConnectionState.Connecting;
 
-                var credentials = new BasicAWSCredentials(ConnectionStringBuilder.AccessKey, ConnectionStringBuilder.AccessSecretKey);
+                AWSCredentials credentials;
+
+                if (!string.IsNullOrWhiteSpace(ConnectionStringBuilder.AccessKey) &&
+                    !string.IsNullOrWhiteSpace(ConnectionStringBuilder.AccessSecretKey))
+                {
+                    credentials = new BasicAWSCredentials(ConnectionStringBuilder.AccessKey, ConnectionStringBuilder.AccessSecretKey);
+                }
+                else
+                {
+                    credentials = FallbackCredentialsFactory.GetCredentials();
+                }
 
                 if (ConnectionStringBuilder.IsStandalone)
                 {
@@ -70,12 +82,17 @@ namespace PrimarSql.Data
                     Client = new AmazonDynamoDBClient(credentials, ConnectionStringBuilder.AwsRegion.ToRegionEndpoint());
                 }
 
+                var _ = Client.DescribeEndpointsAsync(new DescribeEndpointsRequest()).Result;
+
                 _state = ConnectionState.Open;
             }
-            catch
+            catch (Exception e)
             {
+                while (e is AggregateException agg && agg.InnerExceptions.Count == 1)
+                    e = agg.InnerExceptions[0];
+
                 _state = ConnectionState.Broken;
-                throw;
+                throw new PrimarSqlException(e.Message, e);
             }
         }
 
