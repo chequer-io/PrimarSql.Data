@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.IO;
+using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
@@ -64,6 +67,19 @@ namespace PrimarSql.Data
                     !string.IsNullOrWhiteSpace(ConnectionStringBuilder.AccessSecretKey))
                 {
                     credentials = new BasicAWSCredentials(ConnectionStringBuilder.AccessKey, ConnectionStringBuilder.AccessSecretKey);
+                }
+                else if (!string.IsNullOrWhiteSpace(ConnectionStringBuilder.CredentialsFilePath) &&
+                         !string.IsNullOrWhiteSpace(ConnectionStringBuilder.ProfileName))
+                {
+                    if (!File.Exists(ConnectionStringBuilder.CredentialsFilePath))
+                        throw new FileNotFoundException($"File '{ConnectionStringBuilder.CredentialsFilePath}' not exists.");
+
+                    var sharedFile = new SharedCredentialsFile(ConnectionStringBuilder.CredentialsFilePath);
+
+                    if (!sharedFile.TryGetProfile(ConnectionStringBuilder.ProfileName, out var profile))
+                        throw new KeyNotFoundException($"Profile name '{ConnectionStringBuilder.ProfileName}' not found.");
+
+                    credentials = profile.GetAWSCredentials(sharedFile);
                 }
                 else
                 {

@@ -24,7 +24,7 @@ namespace PrimarSql.Data
             get => (AwsRegion)GetValue<int>(nameof(AwsRegion));
             set => SetValue(nameof(AwsRegion), (int)value);
         }
-        
+
         public bool IsStandalone
         {
             get => GetValue<bool>(nameof(IsStandalone));
@@ -35,6 +35,18 @@ namespace PrimarSql.Data
         {
             get => GetValue<string>(nameof(EndPoint));
             set => SetValue(nameof(EndPoint), value);
+        }
+
+        public string CredentialsFilePath
+        {
+            get => GetValue<string>(nameof(CredentialsFilePath));
+            set => SetValue(nameof(CredentialsFilePath), value);
+        }
+
+        public string ProfileName
+        {
+            get => GetValue<string>(nameof(ProfileName));
+            set => SetValue(nameof(ProfileName), value);
         }
         #endregion
 

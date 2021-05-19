@@ -12,18 +12,40 @@ namespace PrimarSql.Data.Sample
 
         static void Main(string[] args)
         {
+            TextPrompt<string> modePrompt = new TextPrompt<string>("Select DynamoDB Connect Mode")
+                .InvalidChoiceMessage("[red]Invalid Mode[/]")
+                .AddChoice("ApiKey")
+                .AddChoice("CredentialsFile")
+                .DefaultValue("ApiKey");
+
             var apiKey = ApiKey;
             var secret = Secret;
+            string credentialsFilePath = string.Empty;
+            string profileName = string.Empty;
 
-            if (string.IsNullOrEmpty(apiKey))
-                apiKey = AnsiConsole.Ask<string>("Enter your DynamoDB [blue]API Key[/]");
+            var mode = AnsiConsole.Prompt(modePrompt);
 
-            TextPrompt<string> secretPrompt = new TextPrompt<string>("Enter your DynamoDB [blue]API Secret[/]")
-                .PromptStyle("red")
-                .Secret();
+            if (mode == "ApiKey")
+            {
+                if (string.IsNullOrEmpty(apiKey))
+                    apiKey = AnsiConsole.Ask<string>("Enter your DynamoDB [blue]API Key[/]");
 
-            if (string.IsNullOrEmpty(secret))
-                secret = AnsiConsole.Prompt(secretPrompt);
+                TextPrompt<string> secretPrompt = new TextPrompt<string>("Enter your DynamoDB [blue]API Secret[/]")
+                    .PromptStyle("red")
+                    .Secret();
+
+                if (string.IsNullOrEmpty(secret))
+                    secret = AnsiConsole.Prompt(secretPrompt);
+            }
+            else
+            {
+                var credentialsFilePathPrompt = new TextPrompt<string>("Enter your [blue]Credentials File Path[/]");
+                credentialsFilePath = AnsiConsole.Prompt(credentialsFilePathPrompt);
+
+                var profilePrompt = new TextPrompt<string>("Enter your [blue]Credentials Profile name[/]");
+
+                profileName = AnsiConsole.Prompt(profilePrompt);
+            }
 
             TextPrompt<string> regionPrompt = new TextPrompt<string>("Enter your DynamoDB [blue]Region[/]?")
                 .InvalidChoiceMessage("[red]Invalid Region[/]")
@@ -38,6 +60,8 @@ namespace PrimarSql.Data.Sample
             {
                 AccessKey = apiKey,
                 AccessSecretKey = secret,
+                CredentialsFilePath = credentialsFilePath,
+                ProfileName = profileName,
                 AwsRegion = Enum.Parse<AwsRegion>(region),
             });
 
