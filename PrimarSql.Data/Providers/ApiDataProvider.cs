@@ -87,8 +87,14 @@ namespace PrimarSql.Data.Providers
             }
 
             var flag = _requester.Next();
-
             Processor.Current = _requester.Current;
+
+            if (Context.DocumentFilters != null)
+            {
+                foreach (var documentFilter in Context.DocumentFilters)
+                    documentFilter.Filter(TableName, Processor.Current);
+            }
+            
             _current = flag ? Processor.Process() : null;
 
             return flag;

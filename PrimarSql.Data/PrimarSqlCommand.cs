@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using Amazon.DynamoDBv2;
@@ -15,6 +16,8 @@ namespace PrimarSql.Data
         public override int CommandTimeout { get; set; }
 
         public override CommandType CommandType { get; set; }
+
+        public IList<IDocumentFilter> DocumentFilters { get; } = new List<IDocumentFilter>();
 
         public override UpdateRowSource UpdatedRowSource
         {
@@ -74,8 +77,12 @@ namespace PrimarSql.Data
         {
             var root = PrimarSqlParser.Parse(CommandText);
             var queryPlanner = ContextVisitor.Visit(root);
-            queryPlanner.Context = new QueryContext(Client);
-            
+
+            queryPlanner.Context = new QueryContext(Client)
+            {
+                DocumentFilters = DocumentFilters
+            };
+
             return queryPlanner.Execute();
         }
 

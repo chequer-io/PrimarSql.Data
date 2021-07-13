@@ -12,16 +12,18 @@ namespace PrimarSql.Data.Models
 
         public AmazonDynamoDBClient Client => _client ?? throw new NullReferenceException("Client should not be null.");
 
+        public IList<IDocumentFilter> DocumentFilters { get; set; }
+
         public QueryContext(AmazonDynamoDBClient client)
         {
             SetClient(client);
         }
-        
+
         public void SetClient(AmazonDynamoDBClient client)
         {
             _client = client;
         }
-        
+
         public TableDescription GetTableDescription(string tableName)
         {
             if (!_tableDescriptions.ContainsKey(tableName))
@@ -29,6 +31,5 @@ namespace PrimarSql.Data.Models
 
             return _tableDescriptions[tableName];
         }
-
     }
 }

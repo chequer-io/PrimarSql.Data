@@ -1,6 +1,6 @@
 ﻿namespace PrimarSql.Data.Planners.Show
 {
-    public class ShowIndexesQueryInfo : IQueryInfo
+    internal class ShowIndexesQueryInfo : IQueryInfo
     {
         public string TableName { get; set; }
         

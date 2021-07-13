@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace PrimarSql.Data.Models
 {
-    public class EmptyEnumerable<T> : IEnumerable<T> where T : class
+    internal class EmptyEnumerable<T> : IEnumerable<T> where T : class
     {
         public int Count { get; }
         
