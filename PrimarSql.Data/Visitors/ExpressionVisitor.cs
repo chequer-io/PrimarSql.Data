@@ -106,22 +106,11 @@ namespace PrimarSql.Data.Visitors
 
         public static InExpression VisitInPredicate(InPredicateContext context)
         {
-            IExpression sources = null;
-
-            if (context.selectStatement() != null)
-            {
-                sources = new SelectExpression(ContextVisitor.VisitSelectStatement(context.selectStatement()));
-            }
-
-            if (context.expressions() != null)
-            {
-                sources = VisitExpressions(context.expressions());
-            }
-
             return new InExpression
             {
+                IsNot = context.NOT() != null,
                 Target = VisitPredicate(context.predicate()),
-                Sources = sources
+                Sources = VisitExpressions(context.expressions())
             };
         }
 
@@ -195,19 +184,6 @@ namespace PrimarSql.Data.Visitors
 
                 case NestedExpressionAtomContext nestedExpressionAtomContext:
                     return VisitNestedExpressionAtom(nestedExpressionAtomContext);
-
-                case ExistsExpressionAtomContext existsExpressionAtomContext:
-                    return new FunctionExpression
-                    {
-                        Member = VisitorHelper.GetMemberByName("EXISTS"),
-                        Parameters = new IExpression[]
-                        {
-                            new SelectExpression(ContextVisitor.VisitSelectStatement(existsExpressionAtomContext.selectStatement()))
-                        }
-                    };
-
-                case SubqueryExpressionAtomContext subqueryExpressionAtomContext:
-                    return new SelectExpression(ContextVisitor.VisitSelectStatement(subqueryExpressionAtomContext.selectStatement()));
 
                 case BitExpressionAtomContext bitExpressionAtomContext:
                     return new LogicalExpression
@@ -295,7 +271,7 @@ namespace PrimarSql.Data.Visitors
                         ValueType = LiteralValueType.Boolean
                     };
 
-                case NullConstantContext nullConstantContext:
+                case NullConstantContext _:
                     return new LiteralExpression
                     {
                         Value = null,

@@ -11,12 +11,6 @@ namespace PrimarSql.Data.Providers
     {
         public static IDataProvider Create(QueryContext context, SelectQueryInfo queryInfo)
         {
-            if (queryInfo.TableSource is SubquerySource)
-            {
-                throw new NotSupportedException("Subquery feature is not supported yet.");
-                // return new SubqueryProvider(context, queryInfo);
-            }
-
             if (queryInfo.TableSource is AtomTableSource)
             {
                 return new ApiDataProvider(context, queryInfo);

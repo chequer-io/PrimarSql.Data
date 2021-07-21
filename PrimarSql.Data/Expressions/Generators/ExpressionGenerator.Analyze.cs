@@ -37,8 +37,11 @@ namespace PrimarSql.Data.Expressions.Generators
                 case FunctionExpression functionExpression:
                     return AnalyzeFunctionExpression(functionExpression, parent, depth);
 
-                case SelectExpression selectExpression:
-                    throw new NotSupportedException("Not Supported Subquery Expression Feature.");
+                case BetweenExpression betweenExpression:
+                    return AnalyzeBetweenExpression(betweenExpression, parent, depth);
+
+                case UnaryExpression unaryExpression:
+                    return AnalyzeUnaryExpression(unaryExpression, parent, depth);
             }
 
             throw new NotSupportedException($"Not Supported {expression.GetType().Name}.");
@@ -70,7 +73,11 @@ namespace PrimarSql.Data.Expressions.Generators
             var leftCondition = AnalyzeInternal(expression.Target, expression, depth + 1);
             var rightCondition = AnalyzeInternal(expression.Sources, expression, depth + 1);
 
-            return new OperatorCondition(leftCondition, "IN", rightCondition);
+            ICondition condition = new OperatorCondition(leftCondition, "IN", rightCondition);
+
+            return !expression.IsNot
+                ? condition
+                : CreateNotCondition(condition);
         }
         #endregion
 
@@ -114,11 +121,15 @@ namespace PrimarSql.Data.Expressions.Generators
         {
             var left = expression.Left;
             var right = expression.Right;
+            var isNot = false;
 
             if (right is UnaryExpression unaryExpression && unaryExpression.Operator.EqualsIgnore("not"))
+            {
+                isNot = true;
                 right = unaryExpression.Expression;
+            }
 
-            return new OperatorCondition(AnalyzeInternal(left, expression, depth), "=", AnalyzeInternal(right, expression, depth));
+            return new OperatorCondition(AnalyzeInternal(left, expression, depth), isNot ? "=" : "<>", AnalyzeInternal(right, expression, depth));
         }
         #endregion
 
@@ -141,7 +152,7 @@ namespace PrimarSql.Data.Expressions.Generators
                 throw new InvalidOperationException("Literal value cannot be used alone.");
 
             var columnName = Context.GetAttributeName(expression.Name.ToName());
-            
+
             return new StringCondition(columnName.Key);
         }
         #endregion
@@ -159,6 +170,42 @@ namespace PrimarSql.Data.Expressions.Generators
             };
         }
         #endregion
+
+        #region Between
+        private ICondition AnalyzeBetweenExpression(BetweenExpression expression, IExpression parent, int depth)
+        {
+            var condition = new BetweenCondition
+            {
+                Predicate = AnalyzeInternal(expression.Target, expression, depth + 1),
+                Expression1 = AnalyzeInternal(expression.Expression1, expression, depth + 1),
+                Expression2 = AnalyzeInternal(expression.Expression2, expression, depth + 1)
+            };
+
+            return !expression.IsNot
+                ? condition
+                : CreateNotCondition(condition);
+        }
+        #endregion
+
+        #region Unary
+        private ICondition AnalyzeUnaryExpression(UnaryExpression expression, IExpression parent, int depth)
+        {
+            return new UnaryCondition
+            {
+                Condition = AnalyzeInternal(expression.Expression, expression, depth + 1),
+                Operator = expression.Operator
+            };
+        }
+        #endregion
+
+        private ICondition CreateNotCondition(ICondition condition)
+        {
+            return new UnaryCondition
+            {
+                Condition = condition,
+                Operator = "NOT"
+            };
+        }
 
         #region Analyze HashKey / SortKey
         private bool AnalyzeHashKey(MemberExpression target, LiteralExpression value, string @operator, out HashKeyCondition hashKeyCondition)

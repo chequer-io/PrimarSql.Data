@@ -223,27 +223,13 @@ namespace PrimarSql.Data.Visitors
 
         public static ITableSource VisitTableSourceBase(TableSourceItemContext context)
         {
-            switch (context)
-            {
-                case AtomTableItemContext atomTableItemContext:
-                {
-                    IPart[] identifiers = IdentifierUtility.Parse(atomTableItemContext.tableName().GetText());
-                    ValidateTableWithIndexName(identifiers);
+            IPart[] identifiers = IdentifierUtility.Parse(context.tableName().GetText());
+            ValidateTableWithIndexName(identifiers);
 
-                    return new AtomTableSource(
-                        identifiers[0].ToString(),
-                        identifiers.Length == 2 ? identifiers[1].ToString() : string.Empty
-                    );
-                }
-
-                case SubqueryTableItemContext subqueryTableItemContext:
-                    return new SubquerySource
-                    {
-                        SubqueryInfo = VisitSelectStatement(subqueryTableItemContext.parenthesisSubquery)
-                    };
-            }
-
-            return VisitorHelper.ThrowNotSupportedContext<ITableSource>(context);
+            return new AtomTableSource(
+                identifiers[0].ToString(),
+                identifiers.Length == 2 ? identifiers[1].ToString() : string.Empty
+            );
         }
         #endregion
 
@@ -266,12 +252,6 @@ namespace PrimarSql.Data.Visitors
         {
             switch (context)
             {
-                case SubqueryInsertStatementContext subqueryContext:
-                {
-                    queryInfo.SelectQueryInfo = VisitSelectStatement(subqueryContext.selectStatement());
-                    break;
-                }
-
                 case ExpressionInsertStatementContext expressionContext:
                 {
                     queryInfo.Rows = expressionContext.expressionsWithDefaults().Select(VisitExpressionsWithDefault);
