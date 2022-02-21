@@ -194,7 +194,7 @@ namespace PrimarSql.Data.Extensions
         {
             return new AttributeValue
             {
-                L = jArray.Values().Select(ToAttributeValue).ToList()
+                L = jArray.Values<JToken>().Select(ToAttributeValue).ToList()
             };
         }
 
