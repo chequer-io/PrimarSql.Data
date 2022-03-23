@@ -1,5 +1,7 @@
 ﻿using System.Data.Common;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using PrimarSql.Data.Providers;
 
@@ -13,8 +15,13 @@ namespace PrimarSql.Data.Planners.Show
 
         public override DbDataReader Execute()
         {
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
             var provider = new ListDataProvider();
-            var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
+            var tableDescription = await Context.GetTableDescriptionAsync(QueryInfo.TableName, cancellationToken);
 
             provider.AddColumn("IndexType", typeof(string));
             provider.AddColumn("IndexArn", typeof(string));

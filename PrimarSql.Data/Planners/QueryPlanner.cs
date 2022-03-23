@@ -4,6 +4,8 @@ using System.Data.Common;
 using Amazon.DynamoDBv2;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Models;
@@ -93,5 +95,7 @@ namespace PrimarSql.Data.Planners
         public QueryContext Context { get; set; }
 
         public abstract DbDataReader Execute();
+
+        public abstract Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default);
     }
 }

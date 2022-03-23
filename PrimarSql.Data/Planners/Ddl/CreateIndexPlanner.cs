@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Planners.Index;
 using PrimarSql.Data.Providers;
@@ -10,8 +12,13 @@ namespace PrimarSql.Data.Planners
     {
         public override DbDataReader Execute()
         {
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
             var indexDefinition = QueryInfo.IndexDefinitionWithType.IndexDefinition;
-            
+
             try
             {
                 var request = new UpdateTableRequest
@@ -24,7 +31,7 @@ namespace PrimarSql.Data.Planners
                     IndexDefinition = indexDefinition
                 };
 
-                action.Action(request.GlobalSecondaryIndexUpdates, Context.GetTableDescription(QueryInfo.TableName));
+                action.Action(request.GlobalSecondaryIndexUpdates, await Context.GetTableDescriptionAsync(QueryInfo.TableName, cancellationToken));
 
                 request.AttributeDefinitions.Add(
                     new AttributeDefinition(indexDefinition.HashKey, DataTypeToScalarAttributeType(QueryInfo.IndexDefinitionWithType.HashKeyType))
@@ -36,8 +43,8 @@ namespace PrimarSql.Data.Planners
                         new AttributeDefinition(indexDefinition.SortKey, DataTypeToScalarAttributeType(QueryInfo.IndexDefinitionWithType.SortKeyType))
                     );
                 }
-                
-                Context.Client.UpdateTableAsync(request).Wait();
+
+                await Context.Client.UpdateTableAsync(request, cancellationToken);
             }
             catch (AggregateException e)
             {

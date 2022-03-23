@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Processors;
@@ -12,18 +14,21 @@ namespace PrimarSql.Data.Providers
 {
     internal sealed class ListDataProvider : IDataProvider
     {
-        public IProcessor Processor { get; } = null;
+        public PrimarSqlCommand Command => null;
 
+        public IProcessor Processor => null;
+
+        private bool _isDisposed;
         private DataTable _schemaTable;
-        private readonly List<(string, Type)> _columns = new List<(string, Type)>();
-        private readonly List<object[]> _rows = new List<object[]>();
+        private List<(string, Type)> _columns = new List<(string, Type)>();
+        private List<object[]> _rows = new List<object[]>();
         private int _index;
 
         public object this[int i] => GetData(i);
 
-        public bool HasRows => _rows.Count > 0;
+        public bool HasRows => !_isDisposed && _rows.Count > 0;
 
-        public bool HasMoreRows => _rows.Count > _index;
+        public bool HasMoreRows => !_isDisposed && _rows.Count > _index;
 
         public int RecordsAffected => -1;
 
@@ -31,21 +36,25 @@ namespace PrimarSql.Data.Providers
 
         public void AddColumn(string name, Type columnType)
         {
+            VerifyNotDisposed();
             _columns.Add((name, columnType));
         }
 
         public void AddRow(params object[] row)
         {
+            VerifyNotDisposed();
             _rows.Add(row);
         }
 
         public void AddRows(params object[][] rows)
         {
+            VerifyNotDisposed();
             _rows.AddRange(rows);
         }
 
         public DataTable GetSchemaTable()
         {
+            VerifyNotDisposed();
             if (_schemaTable == null)
             {
                 _schemaTable = DataProviderUtility.GetNewSchemaTable();
@@ -63,6 +72,7 @@ namespace PrimarSql.Data.Providers
 
         public object GetData(int ordinal)
         {
+            VerifyNotDisposed();
             var data = Current[ordinal];
 
             return data switch
@@ -75,6 +85,7 @@ namespace PrimarSql.Data.Providers
 
         public DataRow GetDataRow(string name)
         {
+            VerifyNotDisposed();
             var schemaTable = GetSchemaTable();
 
             IEnumerable<DataRow> matchedRows = schemaTable.Rows
@@ -86,6 +97,7 @@ namespace PrimarSql.Data.Providers
 
         public DataRow GetDataRow(int ordinal)
         {
+            VerifyNotDisposed();
             var schemaTable = GetSchemaTable();
 
             IEnumerable<DataRow> matchedRows = schemaTable.Rows
@@ -97,12 +109,36 @@ namespace PrimarSql.Data.Providers
 
         public bool Next()
         {
+            VerifyNotDisposed();
+
             if (!HasMoreRows)
                 return false;
 
             Current = _rows[_index++];
 
             return true;
+        }
+
+        public Task<bool> NextAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(Next());
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _schemaTable?.Dispose();
+            _columns = null;
+            _rows = null;
+            _isDisposed = true;
+        }
+
+        private void VerifyNotDisposed()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException("ListDataProvider is already disposed.");
         }
     }
 }

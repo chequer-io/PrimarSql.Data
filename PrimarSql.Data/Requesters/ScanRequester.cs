@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Models;
@@ -54,9 +57,10 @@ namespace PrimarSql.Data.Requesters
             return request;
         }
 
-        protected override RequestResponseData GetResponse(ScanRequest request)
+        protected override async Task<RequestResponseData> GetResponseAsync(ScanRequest request, CancellationToken cancellationToken = default)
         {
-            var response = Client.ScanAsync(request).Result;
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Command.CancellationTokenSource.Token).Token;
+            var response = await Client.ScanAsync(request, cts);
 
             IEnumerable<Dictionary<string, AttributeValue>> value;
 

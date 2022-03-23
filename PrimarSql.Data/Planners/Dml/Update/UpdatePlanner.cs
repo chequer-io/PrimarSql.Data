@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Expressions;
@@ -16,18 +18,16 @@ namespace PrimarSql.Data.Planners
 {
     internal sealed class UpdatePlanner : QueryPlanner<UpdateQueryInfo>
     {
-        private int _updatedCount = 0;
-
         public UpdatePlanner(UpdateQueryInfo queryInfo)
         {
             QueryInfo = queryInfo;
         }
 
-        public IColumn[] GetColumns()
+        public async Task<IColumn[]> GetColumnsAsync(CancellationToken cancellationToken = default)
         {
             var columns = new List<IColumn>();
 
-            var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
+            var tableDescription = await Context.GetTableDescriptionAsync(QueryInfo.TableName, cancellationToken);
             var hashKeyName = tableDescription.KeySchema.First(schema => schema.KeyType == KeyType.HASH).AttributeName;
             var sortKeyName = tableDescription.KeySchema.FirstOrDefault(schema => schema.KeyType == KeyType.RANGE)?.AttributeName;
 
@@ -106,12 +106,19 @@ namespace PrimarSql.Data.Planners
 
         public override DbDataReader Execute()
         {
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
+            int updatedCount = 0;
+            
             var selectQueryInfo = new SelectQueryInfo
             {
                 WhereExpression = QueryInfo.WhereExpression,
                 Limit = QueryInfo.Limit,
                 TableSource = new AtomTableSource(QueryInfo.TableName, string.Empty),
-                Columns = GetColumns(),
+                Columns = await GetColumnsAsync(cancellationToken),
             };
 
             // TODO: Performance issue, need to performance enhancement.
@@ -124,11 +131,11 @@ namespace PrimarSql.Data.Planners
                 Context = Context
             };
 
-            var reader = planner.Execute();
+            var reader = await planner.ExecuteAsync(cancellationToken);
             bool hasSortKey = selectQueryInfo.Columns.Length == 2;
             string updateExpression = GetUpdateExpression();
 
-            while (reader.Read())
+            while (await reader.ReadAsync(cancellationToken))
             {
                 var request = new UpdateItemRequest
                 {
@@ -145,7 +152,7 @@ namespace PrimarSql.Data.Planners
 
                 try
                 {
-                    Context.Client.UpdateItemAsync(request).Wait();
+                    await Context.Client.UpdateItemAsync(request, cancellationToken);
                 }
                 catch (AggregateException e)
                 {
@@ -153,10 +160,10 @@ namespace PrimarSql.Data.Planners
                     throw new Exception($"Error while update Item (Key: {reader.GetName(0)}){Environment.NewLine}{innerException.Message}");
                 }
 
-                _updatedCount++;
+                updatedCount++;
             }
 
-            return new PrimarSqlDataReader(new EmptyDataProvider(_updatedCount));
+            return new PrimarSqlDataReader(new EmptyDataProvider(updatedCount));
         }
     }
 }

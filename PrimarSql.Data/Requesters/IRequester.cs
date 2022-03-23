@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Models;
@@ -8,6 +10,8 @@ namespace PrimarSql.Data.Requesters
 {
     internal interface IRequester
     {
+        PrimarSqlCommand Command { get; set; }
+
         AmazonDynamoDBClient Client { get; }
 
         SelectQueryInfo QueryInfo { get; }
@@ -49,6 +53,8 @@ namespace PrimarSql.Data.Requesters
         );
 
         bool Next();
+
+        Task<bool> NextAsync(CancellationToken cancellationToken = default);
 
         long RequestCount();
     }

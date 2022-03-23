@@ -1,12 +1,15 @@
 ﻿using System.Data;
-using Newtonsoft.Json.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using PrimarSql.Data.Processors;
 
 namespace PrimarSql.Data.Providers
 {
     internal sealed class EmptyDataProvider : IDataProvider
     {
-        public IProcessor Processor { get; } = null;
+        public PrimarSqlCommand Command => null;
+
+        public IProcessor Processor => null;
 
         public object[] Current => null;
 
@@ -20,7 +23,7 @@ namespace PrimarSql.Data.Providers
         {
             RecordsAffected = recordsAffected;
         }
-        
+
         public object GetData(int ordinal)
         {
             return null;
@@ -44,6 +47,15 @@ namespace PrimarSql.Data.Providers
         public bool Next()
         {
             return false;
+        }
+
+        public Task<bool> NextAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(false);
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

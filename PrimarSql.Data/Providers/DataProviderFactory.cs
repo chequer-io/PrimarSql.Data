@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Planners;
@@ -13,7 +15,11 @@ namespace PrimarSql.Data.Providers
         {
             if (queryInfo.TableSource is AtomTableSource)
             {
-                return new ApiDataProvider(context, queryInfo);
+                var provider = new ApiDataProvider(context, queryInfo);
+                provider.Command = context.Command;
+                provider.InitializeAsync().Wait();
+
+                return provider;
             }
 
             // TODO: If column contains derived column (expression column is not supported yet)
@@ -21,7 +27,27 @@ namespace PrimarSql.Data.Providers
             {
                 throw new InvalidOperationException("Cannot provide data. Source is not defined.");
             }
-            
+
+            return new EmptyDataProvider();
+        }
+
+        public static async Task<IDataProvider> CreateAsync(QueryContext context, SelectQueryInfo queryInfo, CancellationToken cancellationToken)
+        {
+            if (queryInfo.TableSource is AtomTableSource)
+            {
+                var provider = new ApiDataProvider(context, queryInfo);
+                provider.Command = context.Command;
+                await provider.InitializeAsync(cancellationToken);
+
+                return provider;
+            }
+
+            // TODO: If column contains derived column (expression column is not supported yet)
+            if (queryInfo.Columns.Any(column => column is PropertyColumn || column is StarColumn))
+            {
+                throw new InvalidOperationException("Cannot provide data. Source is not defined.");
+            }
+
             return new EmptyDataProvider();
         }
     }

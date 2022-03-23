@@ -2,14 +2,14 @@
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data
 {
     public sealed class PrimarSqlDataReader : DbDataReader
     {
-        private readonly IDataProvider _dataProvider;
-        
         public override int FieldCount => _dataProvider.GetSchemaTable()?.Rows.Count ?? 0;
 
         public override bool HasRows => _dataProvider.HasRows;
@@ -20,20 +20,22 @@ namespace PrimarSql.Data
 
         public override int Depth => 0;
 
+        public override object this[int ordinal] => _dataProvider[ordinal];
+
+        public override object this[string name] => _dataProvider[GetOrdinal(name)];
+
+        private readonly IDataProvider _dataProvider;
+
         internal PrimarSqlDataReader(IDataProvider dataProvider)
         {
             _dataProvider = dataProvider;
         }
 
-        public override object this[int ordinal] => _dataProvider[ordinal];
-
-        public override object this[string name] => _dataProvider[GetOrdinal(name)];
-
         public override DataTable GetSchemaTable()
         {
             return _dataProvider.GetSchemaTable();
         }
-        
+
         public override string GetName(int ordinal)
         {
             var dataRow = _dataProvider.GetDataRow(ordinal);
@@ -153,9 +155,38 @@ namespace PrimarSql.Data
 
         public override bool Read() => _dataProvider.Next();
 
+        public override Task<bool> ReadAsync(CancellationToken cancellationToken)
+        {
+            return _dataProvider.NextAsync(cancellationToken);
+        }
+
         public override bool IsDBNull(int ordinal)
         {
             return GetValue(ordinal) == DBNull.Value;
+        }
+
+        public override void Close()
+        {
+            Dispose();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                if (disposing)
+                    DisposeAsync();
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            _dataProvider.Dispose();
+            return default;
         }
 
         internal sealed class PrimarSqlEnumerator : IEnumerator

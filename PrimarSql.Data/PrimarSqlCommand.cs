@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Visitors;
@@ -15,7 +17,17 @@ namespace PrimarSql.Data
 
         public override int CommandTimeout { get; set; }
 
-        public override CommandType CommandType { get; set; }
+        public override CommandType CommandType
+        {
+            get => CommandType.Text;
+            set
+            {
+                if (value == CommandType.Text)
+                    return;
+
+                throw new NotSupportedException(value.ToString());
+            }
+        }
 
         public IList<IDocumentFilter> DocumentFilters { get; } = new List<IDocumentFilter>();
 
@@ -31,6 +43,8 @@ namespace PrimarSql.Data
 
         protected override DbTransaction DbTransaction { get; set; }
 
+        public bool IsCanceled => CancellationTokenSource.IsCancellationRequested;
+
         public override bool DesignTimeVisible
         {
             get => false;
@@ -39,6 +53,8 @@ namespace PrimarSql.Data
 
         private AmazonDynamoDBClient Client => ((PrimarSqlConnection)Connection).Client;
         #endregion
+
+        internal CancellationTokenSource CancellationTokenSource { get; private set; }
 
         #region Public Methods
         public override void Prepare()
@@ -75,19 +91,28 @@ namespace PrimarSql.Data
 
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
+            return ExecuteDbDataReaderAsync(behavior, CancellationToken.None).Result;
+        }
+
+        protected override Task<DbDataReader> ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+        {
             var root = PrimarSqlParser.Parse(CommandText);
             var queryPlanner = ContextVisitor.Visit(root);
 
-            queryPlanner.Context = new QueryContext(Client)
+            queryPlanner.Context = new QueryContext(Client, this)
             {
                 DocumentFilters = DocumentFilters
             };
 
-            return queryPlanner.Execute();
+            CancellationTokenSource = new CancellationTokenSource();
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, CancellationTokenSource.Token);
+
+            return queryPlanner.ExecuteAsync(linkedCts.Token);
         }
 
         public override void Cancel()
         {
+            CancellationTokenSource?.Cancel();
         }
         #endregion
     }

@@ -1,4 +1,6 @@
 ﻿using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Providers;
 
@@ -8,8 +10,13 @@ namespace PrimarSql.Data.Planners.Describe
     {
         public override DbDataReader Execute()
         {
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
             var provider = new ListDataProvider();
-            var response = Context.Client.DescribeEndpointsAsync(new DescribeEndpointsRequest()).Result;
+            var response = await Context.Client.DescribeEndpointsAsync(new DescribeEndpointsRequest(), cancellationToken);
 
             provider.AddColumn("Address", typeof(string));
             provider.AddColumn("CachePeriodInMinutes", typeof(long));

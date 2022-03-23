@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions.Generators;
@@ -13,10 +14,6 @@ namespace PrimarSql.Data.Providers
 {
     internal sealed class ApiDataProvider : BaseDataProvider
     {
-        private readonly TableDescription _tableDescription;
-        private IRequester _requester;
-        private object[] _current;
-
         public QueryContext Context { get; }
 
         public SelectQueryInfo QueryInfo { get; }
@@ -33,19 +30,36 @@ namespace PrimarSql.Data.Providers
 
         public string IndexName => AtomTableSource?.IndexName;
 
+        private bool _isDisposed;
+        private TableDescription _tableDescription;
+        private bool _isInitialized;
+        private IRequester _requester;
+        private object[] _current;
+
         public ApiDataProvider(QueryContext context, SelectQueryInfo queryInfo)
         {
             Context = context;
             QueryInfo = queryInfo;
+        }
 
-            _tableDescription = context.GetTableDescription(TableName);
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
+        {
+            VerifyNotDisposed();
+
+            if (_isInitialized)
+                return;
+
+            _tableDescription = await Context.GetTableDescriptionAsync(TableName, cancellationToken);
 
             Processor = GetProcessor(QueryInfo);
             SetRequester();
+
+            _isInitialized = true;
         }
 
         public override object GetData(int ordinal)
         {
+            VerifyNotDisposed();
             var data = Current[ordinal];
 
             switch (data)
@@ -66,7 +80,7 @@ namespace PrimarSql.Data.Providers
                 case decimal _:
                 case double _:
                 case bool _:
-                case char _:        
+                case char _:
                     return data;
 
                 default:
@@ -76,6 +90,16 @@ namespace PrimarSql.Data.Providers
 
         public override bool Next()
         {
+            return !Context.Command.IsCanceled && NextAsync().Result;
+        }
+
+        public override async Task<bool> NextAsync(CancellationToken cancellationToken = default)
+        {
+            VerifyNotDisposed();
+
+            if (Context.Command.IsCanceled)
+                return false;
+
             if (Processor is CountFunctionProcessor processor)
             {
                 if (processor.Read)
@@ -86,7 +110,7 @@ namespace PrimarSql.Data.Providers
                 return true;
             }
 
-            var flag = _requester.Next();
+            var flag = await _requester.NextAsync(cancellationToken);
             Processor.Current = _requester.Current;
 
             if (Context.DocumentFilters != null)
@@ -94,7 +118,7 @@ namespace PrimarSql.Data.Providers
                 foreach (var documentFilter in Context.DocumentFilters)
                     documentFilter.Filter(TableName, Processor.Current);
             }
-            
+
             _current = flag ? Processor.Process() : null;
 
             return flag;
@@ -141,6 +165,8 @@ namespace PrimarSql.Data.Providers
                 }
             }
 
+            _requester.Command = Command;
+
             _requester.SetParameters(
                 Context.Client,
                 QueryInfo,
@@ -154,6 +180,24 @@ namespace PrimarSql.Data.Providers
                 IndexName,
                 generateResult.FilterExpression
             );
+        }
+
+        public override void Dispose()
+        {
+            if (_isDisposed)
+                return;
+
+            _requester = null;
+            _current = null;
+            _tableDescription = null;
+
+            _isDisposed = true;
+        }
+
+        private void VerifyNotDisposed()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException("ListDataProvider is already disposed.");
         }
     }
 }

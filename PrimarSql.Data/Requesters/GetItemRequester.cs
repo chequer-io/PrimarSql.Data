@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Extensions;
 
@@ -27,21 +30,30 @@ namespace PrimarSql.Data.Requesters
 
         public override bool Next()
         {
+            return NextAsync().Result;
+        }
+
+        public override async Task<bool> NextAsync(CancellationToken cancellationToken = default)
+        {
             if (!HasRows)
                 return false;
 
-            var attr = new Dictionary<string, AttributeValue>();
-            attr[HashKey.ExpressionAttributeName.Value] = HashKey.ExpressionAttributeValue.Value;
+            var attr = new Dictionary<string, AttributeValue>
+            {
+                [HashKey.ExpressionAttributeName.Value] = HashKey.ExpressionAttributeValue.Value
+            };
 
             if (SortKey != null)
                 attr[SortKey.ExpressionAttributeName.Value] = SortKey.ExpressionAttributeValue.Value;
 
-            var getItemResponse = Client.GetItemAsync(new GetItemRequest
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Command.CancellationTokenSource.Token).Token;
+            
+            var getItemResponse = await Client.GetItemAsync(new GetItemRequest
             {
                 TableName = TableName,
                 ConsistentRead = QueryInfo.UseStronglyConsistent,
                 Key = attr
-            }).Result;
+            }, cts);
 
             if (getItemResponse.Item.Count == 0)
                 return false;

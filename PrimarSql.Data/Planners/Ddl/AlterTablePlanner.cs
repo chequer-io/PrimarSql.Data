@@ -1,4 +1,6 @@
 using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Planners.Table;
@@ -10,8 +12,13 @@ namespace PrimarSql.Data.Planners
     {
         public override DbDataReader Execute()
         {
-            var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
-            
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
+            var tableDescription = await Context.GetTableDescriptionAsync(QueryInfo.TableName, cancellationToken);
+
             var request = new UpdateTableRequest
             {
                 TableName = QueryInfo.TableName
@@ -30,11 +37,11 @@ namespace PrimarSql.Data.Planners
 
             foreach (var action in QueryInfo.IndexActions)
                 action.Action(request.GlobalSecondaryIndexUpdates, tableDescription);
-            
+
             foreach (var column in QueryInfo.TableColumns)
                 request.AttributeDefinitions.Add(new AttributeDefinition(column.ColumnName, DataTypeToScalarAttributeType(column.DataType)));
-            
-            Context.Client.UpdateTableAsync(request).Wait();
+
+            await Context.Client.UpdateTableAsync(request, cancellationToken);
 
             return new PrimarSqlDataReader(new EmptyDataProvider());
         }

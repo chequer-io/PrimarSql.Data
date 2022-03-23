@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Planners.Table;
@@ -28,10 +30,15 @@ namespace PrimarSql.Data.Planners
 
         public override DbDataReader Execute()
         {
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
             try
             {
-                Context.GetTableDescription(QueryInfo.TableName);
-                
+                await Context.GetTableDescriptionAsync(QueryInfo.TableName, cancellationToken);
+
                 if (QueryInfo.SkipIfExists)
                     return new PrimarSqlDataReader(new EmptyDataProvider());
             }
@@ -39,10 +46,9 @@ namespace PrimarSql.Data.Planners
             {
                 // ignored
             }
-            
-                
+
             QueryInfo.Validate();
-            
+
             var request = new CreateTableRequest
             {
                 TableName = QueryInfo.TableName,
@@ -91,8 +97,8 @@ namespace PrimarSql.Data.Planners
                 request.AttributeDefinitions.Add(new AttributeDefinition(column.ColumnName, DataTypeToScalarAttributeType(column.DataType)));
             }
 
-            Context.Client.CreateTableAsync(request).Wait();
-            
+            await Context.Client.CreateTableAsync(request, cancellationToken);
+
             return new PrimarSqlDataReader(new EmptyDataProvider());
         }
     }

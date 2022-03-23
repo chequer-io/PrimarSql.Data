@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Extensions;
@@ -14,17 +16,17 @@ namespace PrimarSql.Data.Planners
 {
     internal sealed class DeletePlanner : QueryPlanner<DeleteQueryInfo>
     {
-        private int _deletedCount = 0;
+        private int _deletedCount;
 
         public DeletePlanner(DeleteQueryInfo queryInfo) : base(queryInfo)
         {
         }
 
-        public IColumn[] GetColumns()
+        public async Task<IColumn[]> GetColumnsAsync(CancellationToken cancellationToken = default)
         {
             var columns = new List<IColumn>();
 
-            var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
+            var tableDescription = await Context.GetTableDescriptionAsync(QueryInfo.TableName, cancellationToken);
             var hashKeyName = tableDescription.KeySchema.First(schema => schema.KeyType == KeyType.HASH).AttributeName;
             var sortKeyName = tableDescription.KeySchema.FirstOrDefault(schema => schema.KeyType == KeyType.RANGE)?.AttributeName;
 
@@ -38,12 +40,18 @@ namespace PrimarSql.Data.Planners
 
         public override DbDataReader Execute()
         {
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
+            _deletedCount = 0;
             var selectQueryInfo = new SelectQueryInfo
             {
                 WhereExpression = QueryInfo.WhereExpression,
                 Limit = QueryInfo.Limit,
                 TableSource = new AtomTableSource(QueryInfo.TableName, string.Empty),
-                Columns = GetColumns(),
+                Columns = await GetColumnsAsync(cancellationToken),
             };
 
             // TODO: Performance issue, need to performance enhancement.
@@ -56,10 +64,10 @@ namespace PrimarSql.Data.Planners
                 Context = Context
             };
 
-            var reader = planner.Execute();
+            var reader = await planner.ExecuteAsync(cancellationToken);
             bool hasSortKey = selectQueryInfo.Columns.Length == 2;
 
-            while (reader.Read())
+            while (await reader.ReadAsync(cancellationToken))
             {
                 var request = new DeleteItemRequest
                 {
@@ -75,7 +83,7 @@ namespace PrimarSql.Data.Planners
 
                 try
                 {
-                    Context.Client.DeleteItemAsync(request).Wait();
+                    await Context.Client.DeleteItemAsync(request, cancellationToken);
                 }
                 catch (AggregateException e)
                 {

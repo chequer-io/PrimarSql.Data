@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Data;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Planners;
 using PrimarSql.Data.Processors;
@@ -9,8 +11,10 @@ namespace PrimarSql.Data.Providers
 {
     internal abstract class BaseDataProvider : IDataProvider
     {
+        public PrimarSqlCommand Command { get; set; }
+
         public IProcessor Processor { get; set; }
-        
+
         public abstract object[] Current { get; }
 
         public object this[int i] => GetData(i);
@@ -37,25 +41,25 @@ namespace PrimarSql.Data.Providers
         }
 
         public abstract bool Next();
-        
+
+        public abstract Task<bool> NextAsync(CancellationToken cancellationToken = default);
+
         protected static IProcessor GetProcessor(SelectQueryInfo queryInfo)
         {
             if (queryInfo.Columns.FirstOrDefault() is StarColumn)
-            {
                 return new StarProcessor();
-            }
-            else if (queryInfo.Columns.All(c => c is PropertyColumn))
-            {
+
+            if (queryInfo.Columns.All(c => c is PropertyColumn))
                 return new ColumnProcessor(queryInfo.Columns.Select(c => c as PropertyColumn));
-            }
-            else if (queryInfo.Columns.FirstOrDefault() is CountFunctionColumn countFunctionColumn)
-            {
+
+            if (queryInfo.Columns.FirstOrDefault() is CountFunctionColumn countFunctionColumn)
                 return new CountFunctionProcessor(countFunctionColumn.Alias);
-            }
-            else
-            {
-                throw new NotSupportedException("Not supported column type");
-            }
+
+            throw new NotSupportedException("Not supported column type");
+        }
+
+        public virtual void Dispose()
+        {
         }
     }
 }

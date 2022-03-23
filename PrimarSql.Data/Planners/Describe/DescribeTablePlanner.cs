@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Providers;
@@ -16,19 +18,24 @@ namespace PrimarSql.Data.Planners.Describe
 
         public override DbDataReader Execute()
         {
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
             var provider = new ListDataProvider();
-            var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
+            var tableDescription = await Context.GetTableDescriptionAsync(QueryInfo.TableName, cancellationToken);
             List<KeySchemaElement> keySchema = tableDescription.KeySchema;
             List<AttributeDefinition> attributeDefinitions = tableDescription.AttributeDefinitions;
-            
+
             var hashKeyName = keySchema
                 .First(schema => schema.KeyType == KeyType.HASH)
                 .AttributeName;
-            
+
             var sortKeyName = keySchema
                 .FirstOrDefault(schema => schema.KeyType == KeyType.RANGE)?
                 .AttributeName;
-            
+
             var hashKeyType = attributeDefinitions
                 .First(definition => definition.AttributeName == hashKeyName)
                 .AttributeType
@@ -72,7 +79,7 @@ namespace PrimarSql.Data.Planners.Describe
                 tableDescription.BillingModeSummary?.BillingMode.Value,
                 tableDescription.BillingModeSummary?.LastUpdateToPayPerRequestDateTime
             );
-            
+
             return new PrimarSqlDataReader(provider);
         }
     }

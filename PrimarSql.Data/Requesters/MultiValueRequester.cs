@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Extensions;
@@ -9,7 +11,7 @@ namespace PrimarSql.Data.Requesters
 {
     internal abstract class MultiValueRequester<TRequest> : BaseRequester where TRequest : AmazonDynamoDBRequest
     {
-        private int _index = 0;
+        private int _index;
 
         protected int RemainedSkipCount { get; set; }
 
@@ -27,11 +29,16 @@ namespace PrimarSql.Data.Requesters
 
         protected abstract TRequest GetFetchRequest(TRequest request);
 
-        protected abstract RequestResponseData GetResponse(TRequest request);
+        protected abstract Task<RequestResponseData> GetResponseAsync(TRequest request, CancellationToken cancellationToken = default);
 
         public override bool Next()
         {
-            if (RemainedCount == 0 || (RemainedSkipCount != 0 && !SkipOffset()))
+            return NextAsync().Result;
+        }
+
+        public override async Task<bool> NextAsync(CancellationToken cancellationToken = default)
+        {
+            if (RemainedCount == 0 || RemainedSkipCount != 0 && !await SkipOffsetAsync(cancellationToken))
                 return false;
 
             while (Items == null || Items.Count <= _index)
@@ -39,7 +46,7 @@ namespace PrimarSql.Data.Requesters
                 if (!HasMoreRows)
                     return false;
 
-                Fetch();
+                await FetchAsync(cancellationToken);
                 _index = 0;
             }
 
@@ -49,7 +56,7 @@ namespace PrimarSql.Data.Requesters
             return true;
         }
 
-        protected virtual bool Fetch()
+        protected virtual async Task<bool> FetchAsync(CancellationToken cancellationToken = default)
         {
             if (!HasRows || !HasMoreRows)
                 return false;
@@ -68,7 +75,7 @@ namespace PrimarSql.Data.Requesters
             }
 
             var request = GetFetchRequest(GetRequest());
-            var response = GetResponse(request);
+            var response = await GetResponseAsync(request, cancellationToken);
 
             Items = response.Items.ToList();
             ExclusiveStartKey = response.ExclusiveStartKey;
@@ -79,12 +86,12 @@ namespace PrimarSql.Data.Requesters
             return Items.Count != 0;
         }
 
-        protected virtual bool SkipOffset()
+        protected virtual async Task<bool> SkipOffsetAsync(CancellationToken cancellationToken = default)
         {
             while (RemainedSkipCount > 0)
             {
                 var request = GetSkipRequest(GetRequest());
-                var response = GetResponse(request);
+                var response = await GetResponseAsync(request, cancellationToken);
 
                 ExclusiveStartKey = response.ExclusiveStartKey;
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Expressions;
@@ -24,7 +26,13 @@ namespace PrimarSql.Data.Planners
 
         public override DbDataReader Execute()
         {
-            var tableDescription = Context.GetTableDescription(QueryInfo.TableName);
+            return ExecuteAsync().Result;
+        }
+
+        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        {
+            _insertCount = 0;
+            var tableDescription = await Context.GetTableDescriptionAsync(QueryInfo.TableName, cancellationToken);
             List<KeySchemaElement> keySchema = tableDescription.KeySchema;
             _hashKeyName = keySchema.First(schema => schema.KeyType == KeyType.HASH).AttributeName;
             _sortKeyName = keySchema.FirstOrDefault(schema => schema.KeyType == KeyType.RANGE)?.AttributeName;
@@ -47,7 +55,7 @@ namespace PrimarSql.Data.Planners
 
                     foreach (IEnumerable<IExpression> row in QueryInfo.Rows)
                     {
-                        CallPutItem(GetItemFromRawValue(row));
+                        await CallPutItemAsync(GetItemFromRawValue(row), cancellationToken);
                         _insertCount++;
                     }
 
@@ -58,7 +66,7 @@ namespace PrimarSql.Data.Planners
                 {
                     foreach (Dictionary<string, AttributeValue> row in QueryInfo.JsonValues)
                     {
-                        CallPutItem(row);
+                        await CallPutItemAsync(row, cancellationToken);
                         _insertCount++;
                     }
 
@@ -100,7 +108,7 @@ namespace PrimarSql.Data.Planners
             return item;
         }
 
-        private void CallPutItem(Dictionary<string, AttributeValue> item)
+        private async Task CallPutItemAsync(Dictionary<string, AttributeValue> item, CancellationToken cancellationToken)
         {
             _request = new PutItemRequest
             {
@@ -112,7 +120,7 @@ namespace PrimarSql.Data.Planners
 
             try
             {
-                Context.Client.PutItemAsync(_request).Wait();
+                await Context.Client.PutItemAsync(_request, cancellationToken);
             }
             catch (AggregateException e)
             {

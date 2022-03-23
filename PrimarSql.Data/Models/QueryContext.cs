@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 
@@ -14,8 +16,11 @@ namespace PrimarSql.Data.Models
 
         public IList<IDocumentFilter> DocumentFilters { get; set; }
 
-        public QueryContext(AmazonDynamoDBClient client)
+        public PrimarSqlCommand Command { get; set; }
+
+        public QueryContext(AmazonDynamoDBClient client, PrimarSqlCommand command)
         {
+            Command = command;
             SetClient(client);
         }
 
@@ -24,10 +29,10 @@ namespace PrimarSql.Data.Models
             _client = client;
         }
 
-        public TableDescription GetTableDescription(string tableName)
+        public async Task<TableDescription> GetTableDescriptionAsync(string tableName, CancellationToken cancellationToken = default)
         {
             if (!_tableDescriptions.ContainsKey(tableName))
-                _tableDescriptions[tableName] = _client.DescribeTableAsync(tableName).Result.Table;
+                _tableDescriptions[tableName] = (await _client.DescribeTableAsync(tableName, cancellationToken)).Table;
 
             return _tableDescriptions[tableName];
         }
