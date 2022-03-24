@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using System;
+using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using PrimarSql.Data.Providers;
@@ -14,17 +15,14 @@ namespace PrimarSql.Data.Planners.Show
 
         public override DbDataReader Execute()
         {
-            var response = Context.Client.ListTablesAsync().Result;
-            var provider = new ListDataProvider();
-
-            provider.AddColumn("name", typeof(string));
-
-            foreach (string tableName in response.TableNames)
+            try
             {
-                provider.AddRow(tableName);
+                return ExecuteAsync().Result;
             }
-
-            return new PrimarSqlDataReader(provider);
+            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
+            {
+                throw e.InnerExceptions[0];
+            }
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)

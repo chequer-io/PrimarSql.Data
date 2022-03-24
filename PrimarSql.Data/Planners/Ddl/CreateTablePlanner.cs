@@ -30,7 +30,14 @@ namespace PrimarSql.Data.Planners
 
         public override DbDataReader Execute()
         {
-            return ExecuteAsync().Result;
+            try
+            {
+                return ExecuteAsync().Result;
+            }
+            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
+            {
+                throw e.InnerExceptions[0];
+            }
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)

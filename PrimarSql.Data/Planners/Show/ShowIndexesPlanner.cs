@@ -1,4 +1,5 @@
-﻿using System.Data.Common;
+﻿using System;
+using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +16,14 @@ namespace PrimarSql.Data.Planners.Show
 
         public override DbDataReader Execute()
         {
-            return ExecuteAsync().Result;
+            try
+            {
+                return ExecuteAsync().Result;
+            }
+            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
+            {
+                throw e.InnerExceptions[0];
+            }
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)

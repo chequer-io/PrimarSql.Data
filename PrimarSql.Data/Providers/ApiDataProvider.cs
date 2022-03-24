@@ -90,7 +90,14 @@ namespace PrimarSql.Data.Providers
 
         public override bool Next()
         {
-            return !Context.Command.IsCanceled && NextAsync().Result;
+            try
+            {
+                return !Context.Command.IsCanceled && NextAsync().Result;
+            }
+            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
+            {
+                throw e.InnerExceptions[0];
+            }
         }
 
         public override async Task<bool> NextAsync(CancellationToken cancellationToken = default)

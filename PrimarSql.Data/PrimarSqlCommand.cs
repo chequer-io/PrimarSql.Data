@@ -91,7 +91,14 @@ namespace PrimarSql.Data
 
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
-            return ExecuteDbDataReaderAsync(behavior, CancellationToken.None).Result;
+            try
+            {
+                return ExecuteDbDataReaderAsync(behavior, CancellationToken.None).Result;
+            }
+            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
+            {
+                throw e.InnerExceptions[0];
+            }
         }
 
         protected override Task<DbDataReader> ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
