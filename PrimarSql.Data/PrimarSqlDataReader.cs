@@ -167,26 +167,7 @@ namespace PrimarSql.Data
 
         public override void Close()
         {
-            Dispose();
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            try
-            {
-                if (disposing)
-                    DisposeAsync();
-            }
-            finally
-            {
-                base.Dispose(disposing);
-            }
-        }
-
-        public override ValueTask DisposeAsync()
-        {
             _dataProvider.Dispose();
-            return default;
         }
 
         internal sealed class PrimarSqlEnumerator : IEnumerator
