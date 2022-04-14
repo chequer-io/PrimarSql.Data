@@ -120,7 +120,7 @@ namespace PrimarSql.Data.Providers
             var flag = await _requester.NextAsync(cancellationToken);
             Processor.Current = _requester.Current;
 
-            if (Context.DocumentFilters != null)
+            if (Context.DocumentFilters != null && Processor.Current != null)
             {
                 foreach (var documentFilter in Context.DocumentFilters)
                     documentFilter.Filter(TableName, Processor.Current);
