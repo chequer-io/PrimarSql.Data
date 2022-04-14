@@ -271,15 +271,23 @@ namespace PrimarSql.Data.Visitors
                         ValueType = LiteralValueType.Boolean
                     };
 
+                case RealLiteralConstantContext realLiteralConstantContext:
+                    return new LiteralExpression
+                    {
+                        Value = decimal.Parse(realLiteralConstantContext.GetText()),
+                        ValueType = LiteralValueType.Numeric
+                    };
+
                 case NullConstantContext _:
                     return new LiteralExpression
                     {
                         Value = null,
                         ValueType = LiteralValueType.Null,
                     };
-            }
 
-            return null;
+                default:
+                    throw new NotSupportedException($"'{context.GetType().Name[..^7]}' constant type not supported.");
+            }
         }
 
         public static LiteralExpression VisitStringLiteral(StringLiteralContext context)
