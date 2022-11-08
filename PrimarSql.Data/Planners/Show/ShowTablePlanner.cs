@@ -25,19 +25,9 @@ namespace PrimarSql.Data.Planners.Show
             }
         }
 
-        public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
+        public override Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
         {
-            var response = await Context.Client.ListTablesAsync(cancellationToken);
-            var provider = new ListDataProvider();
-
-            provider.AddColumn("name", typeof(string));
-
-            foreach (string tableName in response.TableNames)
-            {
-                provider.AddRow(tableName);
-            }
-
-            return new PrimarSqlDataReader(provider);
+            return Task.FromResult<DbDataReader>(new PrimarSqlDataReader(new ShowTableProvider(Context.Client)));
         }
     }
 }
