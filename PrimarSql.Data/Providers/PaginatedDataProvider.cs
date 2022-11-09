@@ -14,10 +14,6 @@ namespace PrimarSql.Data.Providers
 {
     internal abstract class PaginatedDataProvider : IDataProvider
     {
-        public PrimarSqlCommand Command => null;
-
-        public IProcessor Processor => null;
-
         public object this[int i] => GetData(i);
 
         public bool HasRows => true;
@@ -90,28 +86,45 @@ namespace PrimarSql.Data.Providers
 
         protected abstract IEnumerator<object[]> Fetch();
 
+        protected virtual Task<IEnumerator<object[]>> FetchAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(Fetch());
+        }
+
         public bool Next()
         {
             if (_isClosed)
                 return false;
 
-            if (_rowsEnumerator is null || !_rowsEnumerator.MoveNext())
-            {
-                _rowsEnumerator = Fetch();
+            if (_rowsEnumerator?.MoveNext() is true)
+                return true;
 
-                if (_rowsEnumerator is null || !_rowsEnumerator.MoveNext())
-                {
-                    _isClosed = true;
-                    return false;
-                }
-            }
+            _rowsEnumerator?.Dispose();
+            _rowsEnumerator = Fetch();
 
-            return true;
+            if (_rowsEnumerator?.MoveNext() is true)
+                return true;
+
+            _isClosed = true;
+            return false;
         }
 
-        public Task<bool> NextAsync(CancellationToken cancellationToken = default)
+        public async Task<bool> NextAsync(CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Next());
+            if (_isClosed)
+                return false;
+
+            if (_rowsEnumerator?.MoveNext() is true)
+                return true;
+
+            _rowsEnumerator?.Dispose();
+            _rowsEnumerator = await FetchAsync(cancellationToken);
+
+            if (_rowsEnumerator?.MoveNext() is true)
+                return true;
+
+            _isClosed = true;
+            return false;
         }
 
         public void Dispose()
@@ -120,7 +133,12 @@ namespace PrimarSql.Data.Providers
                 return;
 
             _schemaTable?.Dispose();
+            _rowsEnumerator?.Dispose();
             _isDisposed = true;
         }
+
+        PrimarSqlCommand IDataProvider.Command => null;
+
+        IProcessor IDataProvider.Processor => null;
     }
 }
