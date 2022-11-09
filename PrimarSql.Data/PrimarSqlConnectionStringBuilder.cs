@@ -48,6 +48,12 @@ namespace PrimarSql.Data
             get => GetValue<string>(nameof(ProfileName));
             set => SetValue(nameof(ProfileName), value);
         }
+
+        public string ClientName
+        {
+            get => GetValue<string>(nameof(ClientName));
+            set => SetValue(nameof(ClientName), value);
+        }
         #endregion
 
         #region Constructor

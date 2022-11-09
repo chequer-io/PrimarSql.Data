@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.IO;
-using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
@@ -61,41 +61,24 @@ namespace PrimarSql.Data
             {
                 _state = ConnectionState.Connecting;
 
-                AWSCredentials credentials;
-
-                if (!string.IsNullOrWhiteSpace(ConnectionStringBuilder.AccessKey) &&
-                    !string.IsNullOrWhiteSpace(ConnectionStringBuilder.AccessSecretKey))
-                {
-                    credentials = new BasicAWSCredentials(ConnectionStringBuilder.AccessKey, ConnectionStringBuilder.AccessSecretKey);
-                }
-                else if (!string.IsNullOrWhiteSpace(ConnectionStringBuilder.CredentialsFilePath) &&
-                         !string.IsNullOrWhiteSpace(ConnectionStringBuilder.ProfileName))
-                {
-                    if (!File.Exists(ConnectionStringBuilder.CredentialsFilePath))
-                        throw new FileNotFoundException($"File '{ConnectionStringBuilder.CredentialsFilePath}' not exists.");
-
-                    var sharedFile = new SharedCredentialsFile(ConnectionStringBuilder.CredentialsFilePath);
-
-                    if (!sharedFile.TryGetProfile(ConnectionStringBuilder.ProfileName, out var profile))
-                        throw new KeyNotFoundException($"Profile name '{ConnectionStringBuilder.ProfileName}' not found.");
-
-                    credentials = profile.GetAWSCredentials(sharedFile);
-                }
-                else
-                {
-                    credentials = FallbackCredentialsFactory.GetCredentials();
-                }
+                var credentials = CreateCredentials();
 
                 if (ConnectionStringBuilder.IsStandalone)
                 {
-                    Client = new AmazonDynamoDBClient(credentials, new AmazonDynamoDBConfig
-                    {
-                        ServiceURL = ConnectionStringBuilder.EndPoint
-                    });
+                    Client = new AmazonDynamoDBClient(
+                        credentials,
+                        new AmazonDynamoDBConfig
+                        {
+                            ServiceURL = ConnectionStringBuilder.EndPoint
+                        }
+                    );
                 }
                 else
                 {
-                    Client = new AmazonDynamoDBClient(credentials, ConnectionStringBuilder.AwsRegion.ToRegionEndpoint());
+                    Client = new AmazonDynamoDBClient(
+                        credentials,
+                        ConnectionStringBuilder.AwsRegion.ToRegionEndpoint()
+                    );
                 }
 
                 var _ = Client.DescribeEndpointsAsync(new DescribeEndpointsRequest()).Result;
@@ -153,6 +136,62 @@ namespace PrimarSql.Data
             throw new NotSupportedException();
         }
         #endregion
+
+        private AWSCredentials CreateCredentials()
+        {
+            var builder = ConnectionStringBuilder;
+
+            if (!string.IsNullOrWhiteSpace(builder.AccessKey) &&
+                !string.IsNullOrWhiteSpace(builder.AccessSecretKey))
+            {
+                // IAM Account
+                return new BasicAWSCredentials(builder.AccessKey, builder.AccessSecretKey);
+            }
+
+            if (!string.IsNullOrWhiteSpace(builder.CredentialsFilePath) &&
+                !string.IsNullOrWhiteSpace(builder.ProfileName))
+            {
+                // Credentials from shared credential file
+                if (!File.Exists(builder.CredentialsFilePath))
+                    throw new FileNotFoundException($"File '{builder.CredentialsFilePath}' not exists.");
+
+                var sharedFile = new SharedCredentialsFile(builder.CredentialsFilePath);
+
+                if (!sharedFile.TryGetProfile(builder.ProfileName, out var profile))
+                    throw new KeyNotFoundException($"Profile name '{builder.ProfileName}' not found.");
+
+                return profile.GetAWSCredentials(sharedFile);
+            }
+
+            if (!string.IsNullOrWhiteSpace(builder.ProfileName))
+            {
+                // Credentials from config
+                var chain = new CredentialProfileStoreChain();
+
+                if (!chain.TryGetAWSCredentials(builder.ProfileName, out var credentials))
+                    throw new KeyNotFoundException($"Failed to find '{builder.ProfileName}' profile from profile store.");
+
+                if (credentials is SSOAWSCredentials ssoCredentials)
+                {
+                    ssoCredentials.Options.ClientName = string.IsNullOrWhiteSpace(builder.ClientName)
+                        ? "PrimarSql.Data"
+                        : builder.ClientName;
+
+                    ssoCredentials.Options.SsoVerificationCallback = args =>
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = args.VerificationUriComplete,
+                            UseShellExecute = true
+                        });
+                    };
+                }
+
+                return credentials;
+            }
+
+            return FallbackCredentialsFactory.GetCredentials();
+        }
 
         #region Private Methods
         private void VerifyConnectionState()

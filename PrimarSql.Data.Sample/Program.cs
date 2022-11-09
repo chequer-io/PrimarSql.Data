@@ -14,9 +14,10 @@ namespace PrimarSql.Data.Sample
         {
             TextPrompt<string> modePrompt = new TextPrompt<string>("Select DynamoDB Connect Mode")
                 .InvalidChoiceMessage("[red]Invalid Mode[/]")
-                .AddChoice("ApiKey")
-                .AddChoice("CredentialsFile")
-                .DefaultValue("ApiKey");
+                .AddChoice("api_key")
+                .AddChoice("credentials_file")
+                .AddChoice("profile")
+                .DefaultValue("api_key");
 
             var apiKey = ApiKey;
             var secret = Secret;
@@ -25,26 +26,40 @@ namespace PrimarSql.Data.Sample
 
             var mode = AnsiConsole.Prompt(modePrompt);
 
-            if (mode == "ApiKey")
+            switch (mode)
             {
-                if (string.IsNullOrEmpty(apiKey))
-                    apiKey = AnsiConsole.Ask<string>("Enter your DynamoDB [blue]API Key[/]");
+                case "api_key":
+                {
+                    if (string.IsNullOrEmpty(apiKey))
+                        apiKey = AnsiConsole.Ask<string>("Enter your DynamoDB [blue]API Key[/]");
 
-                TextPrompt<string> secretPrompt = new TextPrompt<string>("Enter your DynamoDB [blue]API Secret[/]")
-                    .PromptStyle("red")
-                    .Secret();
+                    TextPrompt<string> secretPrompt = new TextPrompt<string>("Enter your DynamoDB [blue]API Secret[/]")
+                        .PromptStyle("red")
+                        .Secret();
 
-                if (string.IsNullOrEmpty(secret))
-                    secret = AnsiConsole.Prompt(secretPrompt);
-            }
-            else
-            {
-                var credentialsFilePathPrompt = new TextPrompt<string>("Enter your [blue]Credentials File Path[/]");
-                credentialsFilePath = AnsiConsole.Prompt(credentialsFilePathPrompt);
+                    if (string.IsNullOrEmpty(secret))
+                        secret = AnsiConsole.Prompt(secretPrompt);
 
-                var profilePrompt = new TextPrompt<string>("Enter your [blue]Credentials Profile name[/]");
+                    break;
+                }
 
-                profileName = AnsiConsole.Prompt(profilePrompt);
+                case "credentials_file":
+                {
+                    var credentialsFilePathPrompt = new TextPrompt<string>("Enter your [blue]Credentials File Path[/]");
+                    credentialsFilePath = AnsiConsole.Prompt(credentialsFilePathPrompt);
+
+                    var profilePrompt = new TextPrompt<string>("Enter your [blue]Credentials Profile name[/]");
+
+                    profileName = AnsiConsole.Prompt(profilePrompt);
+                    break;
+                }
+
+                default:
+                {
+                    var profilePrompt = new TextPrompt<string>("Enter your [blue]Credentials Profile name[/]");
+                    profileName = AnsiConsole.Prompt(profilePrompt);
+                    break;
+                }
             }
 
             TextPrompt<string> regionPrompt = new TextPrompt<string>("Enter your DynamoDB [blue]Region[/]?")
