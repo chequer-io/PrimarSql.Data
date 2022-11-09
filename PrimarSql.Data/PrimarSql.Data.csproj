@@ -21,6 +21,9 @@
     <ItemGroup>
         <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.3.14" />
         <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.131" />
+        <PackageReference Include="AWSSDK.SSO" Version="3.7.100.12" />
+        <PackageReference Include="AWSSDK.SSOAdmin" Version="3.7.100.12" />
+        <PackageReference Include="AWSSDK.SSOOIDC" Version="3.7.100.12" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
         <PackageReference Include="PrimarSql" Version="1.2.6" />
 
