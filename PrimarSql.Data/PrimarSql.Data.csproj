@@ -22,7 +22,7 @@
         <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.3.14" />
         <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.131" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-        <PackageReference Include="PrimarSql" Version="1.2.4" />
+        <PackageReference Include="PrimarSql" Version="1.2.5" />
 
         <None Include="..\Logo.png" PackagePath="" Pack="True" />
         <None Include="..\LICENSE" PackagePath="" Pack="True" />
