@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using Amazon.DynamoDBv2;
@@ -10,7 +9,7 @@ namespace PrimarSql.Data.Providers
     {
         private readonly AmazonDynamoDBClient _client;
         private string _lastTableName;
-        private bool _isFirst = true;
+        private bool _isClosed;
 
         public ShowTableProvider(AmazonDynamoDBClient client) : base(new[] { ("name", typeof(string)) })
         {
@@ -19,6 +18,9 @@ namespace PrimarSql.Data.Providers
 
         protected override IEnumerator<object[]> Fetch()
         {
+            if (_isClosed)
+                return null;
+
             var result = _client.ListTablesAsync(new ListTablesRequest
             {
                 Limit = 100,
@@ -29,32 +31,34 @@ namespace PrimarSql.Data.Providers
                 return null;
 
             _lastTableName = result.LastEvaluatedTableName;
-            var enumerator = new InternalEnumerator(result.TableNames, _isFirst);
-            _isFirst = false;
 
-            return enumerator;
+            if (_lastTableName is null)
+                _isClosed = true;
+
+            return new InternalEnumerator(result.TableNames);
         }
 
         private class InternalEnumerator : IEnumerator<object[]>
         {
             private readonly List<string> _tableNames;
-            private int _index;
-            private bool _isInitialized;
+            private int _index = -1;
+            private bool _isClosed;
 
-            public InternalEnumerator(List<string> tableNames, bool skipFirst)
+            public InternalEnumerator(List<string> tableNames)
             {
                 _tableNames = tableNames;
-
-                _index = skipFirst ? 0 : -1;
             }
 
             public bool MoveNext()
             {
-                if (_index >= _tableNames.Count - 1)
+                if (_isClosed)
                     return false;
 
                 _index++;
-                _isInitialized = true;
+
+                if (_index >= _tableNames.Count - 1)
+                    _isClosed = true;
+
                 return true;
             }
 
@@ -63,7 +67,7 @@ namespace PrimarSql.Data.Providers
                 _index = 0;
             }
 
-            public object[] Current => _isInitialized ? new object[] { _tableNames[_index] } : null;
+            public object[] Current => _index != -1 ? new object[] { _tableNames[_index] } : null;
 
             object IEnumerator.Current => Current;
 
