@@ -1,14 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 
 namespace PrimarSql.Data.Providers
 {
-    internal class ShowTableProvider : PaginatedDataProvider
+    internal sealed class ShowTableProvider : PaginatedDataProvider
     {
         private readonly AmazonDynamoDBClient _client;
-        private string _lastTableName;
+        private string _lastEvaluatedTableName;
         private bool _isClosed;
 
         public ShowTableProvider(AmazonDynamoDBClient client) : base(new[] { ("name", typeof(string)) })
@@ -18,24 +20,26 @@ namespace PrimarSql.Data.Providers
 
         protected override IEnumerator<object[]> Fetch()
         {
+            return FetchAsync(default).Result;
+        }
+
+        protected override async Task<IEnumerator<object[]>> FetchAsync(CancellationToken cancellationToken)
+        {
             if (_isClosed)
                 return null;
 
-            var result = _client.ListTablesAsync(new ListTablesRequest
+            var response = await _client.ListTablesAsync(new ListTablesRequest
             {
                 Limit = 100,
-                ExclusiveStartTableName = _lastTableName
-            }).Result;
+                ExclusiveStartTableName = _lastEvaluatedTableName
+            }, cancellationToken);
 
-            if (result.TableNames.Count == 0)
-                return null;
-
-            _lastTableName = result.LastEvaluatedTableName;
-
-            if (_lastTableName is null)
+            if (response.LastEvaluatedTableName is null)
                 _isClosed = true;
 
-            return new InternalEnumerator(result.TableNames);
+            _lastEvaluatedTableName = response.LastEvaluatedTableName;
+
+            return new InternalEnumerator(response.TableNames);
         }
 
         private class InternalEnumerator : IEnumerator<object[]>
