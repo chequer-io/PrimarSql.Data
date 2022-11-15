@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
@@ -39,45 +40,9 @@ namespace PrimarSql.Data.Providers
 
             _lastEvaluatedTableName = response.LastEvaluatedTableName;
 
-            return new InternalEnumerator(response.TableNames);
-        }
-
-        private class InternalEnumerator : IEnumerator<object[]>
-        {
-            private readonly List<string> _tableNames;
-            private int _index = -1;
-            private bool _isClosed;
-
-            public InternalEnumerator(List<string> tableNames)
-            {
-                _tableNames = tableNames;
-            }
-
-            public bool MoveNext()
-            {
-                if (_isClosed)
-                    return false;
-
-                _index++;
-
-                if (_index >= _tableNames.Count - 1)
-                    _isClosed = true;
-
-                return true;
-            }
-
-            public void Reset()
-            {
-                _index = 0;
-            }
-
-            public object[] Current => _index != -1 ? new object[] { _tableNames[_index] } : null;
-
-            object IEnumerator.Current => Current;
-
-            public void Dispose()
-            {
-            }
+            return response.TableNames
+                .Select(x => new object[] { x })
+                .GetEnumerator();
         }
     }
 }
