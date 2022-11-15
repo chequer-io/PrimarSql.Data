@@ -1,8 +1,10 @@
 using System;
 using System.Data.Common;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
@@ -11,14 +13,7 @@ namespace PrimarSql.Data.Planners
     {
         public override DbDataReader Execute()
         {
-            try
-            {
-                return ExecuteAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return ExecuteAsync().GetResultSynchronously();
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
@@ -29,16 +24,21 @@ namespace PrimarSql.Data.Planners
                 {
                     await Context.Client.DeleteTableAsync(targetTable, cancellationToken);
                 }
-                catch (ResourceNotFoundException) when (QueryInfo.IfExists)
+                catch (PrimarSqlException e) when (e.Error is PrimarSqlError.ResourceNotFound && QueryInfo.IfExists)
                 {
-                    // ignored
+                    // ignored table if not exists
                 }
-                catch (AggregateException e)
+                catch (Exception e) when (e is not PrimarSqlException)
                 {
-                    var innerException = e.InnerExceptions[0];
-                    throw new Exception($"Error while drop table '{targetTable}'{Environment.NewLine}{innerException.Message}");
+                    throw new PrimarSqlException(
+                        PrimarSqlError.Unknown,
+                        $"Error while drop table '{targetTable}'{Environment.NewLine}{e.Message}"
+                    );
                 }
             }
+
+            foreach (var targetTable in QueryInfo.TargetTables)
+                await Context.Client.WaitForTableDeletingAsync(targetTable, cancellationToken);
 
             return new PrimarSqlDataReader(new EmptyDataProvider());
         }

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Expressions.Generators;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
@@ -28,11 +29,10 @@ namespace PrimarSql.Data.Planners
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>();
             AttributeGenerator = new ExpressionAttributeGenerator();
         }
-        
+
         protected QueryPlanner(T queryInfo) : this()
         {
             QueryInfo = queryInfo;
-            
         }
 
         protected string GetAttributeName(string rawName)
@@ -54,10 +54,10 @@ namespace PrimarSql.Data.Planners
                     case IdentifierPart identifierPart:
                         if (sb.Length != 0)
                             sb.Append(".");
-                        
+
                         sb.Append(GetAttributeName(identifierPart.Identifier));
                         break;
-                    
+
                     case IndexPart indexPart:
                         sb.Append($"[{indexPart.Index}]");
                         break;
@@ -85,7 +85,7 @@ namespace PrimarSql.Data.Planners
             if (VisitorHelper.NumberTypes.Contains(dataType))
                 return ScalarAttributeType.N;
 
-            throw new NotSupportedException($"{dataType.ToUpper()} cannot use to Index Type.");
+            throw new NotSupportedFeatureException($"{dataType.ToUpper()} cannot use to Index Type.");
         }
 
         IQueryInfo IQueryPlanner.QueryInfo => QueryInfo;

@@ -8,6 +8,8 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
+using PrimarSql.Data.Core;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Extensions;
 
 namespace PrimarSql.Data
@@ -31,7 +33,7 @@ namespace PrimarSql.Data
 
         public override ConnectionState State => _state;
 
-        internal AmazonDynamoDBClient Client { get; private set; }
+        internal IAmazonDynamoDB Client { get; private set; }
         #endregion
 
         #region Fields
@@ -65,33 +67,38 @@ namespace PrimarSql.Data
 
                 if (ConnectionStringBuilder.IsStandalone)
                 {
-                    Client = new AmazonDynamoDBClient(
-                        credentials,
-                        new AmazonDynamoDBConfig
-                        {
-                            ServiceURL = ConnectionStringBuilder.EndPoint
-                        }
+                    Client = new AmazonDynamoDBWrapper(
+                        new AmazonDynamoDBClient(
+                            credentials,
+                            new AmazonDynamoDBConfig
+                            {
+                                ServiceURL = ConnectionStringBuilder.EndPoint
+                            }
+                        )
                     );
                 }
                 else
                 {
-                    Client = new AmazonDynamoDBClient(
-                        credentials,
-                        ConnectionStringBuilder.AwsRegion.ToRegionEndpoint()
+                    Client = new AmazonDynamoDBWrapper(
+                        new AmazonDynamoDBClient(
+                            credentials,
+                            ConnectionStringBuilder.AwsRegion.ToRegionEndpoint()
+                        )
                     );
                 }
 
-                var _ = Client.DescribeEndpointsAsync(new DescribeEndpointsRequest()).Result;
+                var _ = Client.DescribeEndpointsAsync(new DescribeEndpointsRequest()).GetResultSynchronously();
 
                 _state = ConnectionState.Open;
             }
             catch (Exception e)
             {
-                while (e is AggregateException agg && agg.InnerExceptions.Count == 1)
-                    e = agg.InnerExceptions[0];
-
                 _state = ConnectionState.Broken;
-                throw new PrimarSqlException(e.Message, e);
+
+                if (e is PrimarSqlException)
+                    throw;
+
+                throw new PrimarSqlException(PrimarSqlError.Unknown, e);
             }
         }
 
@@ -169,7 +176,7 @@ namespace PrimarSql.Data
                 var chain = new CredentialProfileStoreChain();
 
                 if (!chain.TryGetAWSCredentials(builder.ProfileName, out var credentials))
-                    throw new KeyNotFoundException($"Failed to find '{builder.ProfileName}' profile from profile store.");
+                    throw new AWSCredentialsNotFoundInProfileStoreException(builder.ProfileName);
 
                 if (credentials is SSOAWSCredentials ssoCredentials)
                 {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Antlr4.Runtime;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Columns;
@@ -125,7 +126,7 @@ namespace PrimarSql.Data.Visitors
             if (context.orderClause() != null)
             {
                 if (queryInfo.WhereExpression == null)
-                    throw new NotSupportedException("DynamoDB Not support ORDER clause without condition expression.");
+                    throw new NotSupportedFeatureException("DynamoDB Not support ORDER clause without condition expression.");
 
                 if (context.orderClause().DESC() != null)
                     queryInfo.OrderDescend = true;
@@ -173,7 +174,7 @@ namespace PrimarSql.Data.Visitors
             IColumn[] columns = context.selectElement().Select(VisitSelectElement).ToArray();
 
             if (columns.Any(c => c is CountFunctionColumn) && columns.Length > 1)
-                throw new InvalidOperationException("Count function can only use in single column.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Count function can only use in single column.");
 
             return columns;
         }
@@ -529,10 +530,10 @@ namespace PrimarSql.Data.Visitors
 
                     case AlterIndexThroughputContext alterIndexThroughputContext:
                         if (!int.TryParse(alterIndexThroughputContext.readCapacity.GetText(), out int readCapacity))
-                            throw new InvalidOperationException("Read capacity cannot be null.");
+                            throw new PrimarSqlException(PrimarSqlError.Syntax, "Read capacity cannot be null.");
 
                         if (!int.TryParse(alterIndexThroughputContext.writeCapacity.GetText(), out int writeCapacity))
-                            throw new InvalidOperationException("Write capacity cannot be null.");
+                            throw new PrimarSqlException(PrimarSqlError.Syntax, "Write capacity cannot be null.");
 
                         var indexName = GetSinglePartName(alterIndexThroughputContext.uid().GetText(), "Index");
                         queryInfo.AddIndexAlterAction(indexName, readCapacity, writeCapacity);
@@ -615,7 +616,7 @@ namespace PrimarSql.Data.Visitors
             {
                 HashKeyColumnConstraintContext _ => true,
                 RangeKeyColumnConstraintContext _ => false,
-                _ => throw new NotSupportedException($"Not Supported Column constraint {context?.GetType().Name ?? "Unknown Context"}.")
+                _ => throw new NotSupportedFeatureException($"Not supported column constraint {context?.GetType().Name ?? "Unknown Context"}.")
             };
         }
 
@@ -682,7 +683,7 @@ namespace PrimarSql.Data.Visitors
             if (context.INCLUDE() != null)
                 return IndexType.Include;
 
-            throw new NotSupportedException($"Not supported {context.GetText()} index type.");
+            throw new NotSupportedFeatureException($"Not supported index type '{context.GetText()}'");
         }
 
         public static string[] VisitIndexOptionToGetIncludeColumns(IndexOptionContext context)

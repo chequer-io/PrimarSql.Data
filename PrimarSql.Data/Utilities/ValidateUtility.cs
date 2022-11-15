@@ -8,19 +8,19 @@ namespace PrimarSql.Data.Utilities
         public static void ValidateSingleName(IPart[] values, string nameType)
         {
             if (values.Length == 0)
-                throw new InvalidOperationException($"Empty {nameType} name.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, $"Empty {nameType} name.");
 
             if (values.Length > 1)
-                throw new InvalidOperationException($"{nameType} name must single identifier");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, $"{nameType} name must single identifier");
         }
 
         public static void ValidateTableWithIndexName(IPart[] values)
         {
             if (values.Length == 0)
-                throw new InvalidOperationException("Empty Table name.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Empty Table name.");
 
             if (values.Length > 2)
-                throw new InvalidOperationException("Identifiers is too long. (table_name[.index_name])");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Identifiers is too long. (table_name[.index_name])");
         }
     }
 }

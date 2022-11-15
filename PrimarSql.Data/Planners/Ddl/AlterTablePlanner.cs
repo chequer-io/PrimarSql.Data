@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Planners.Table;
 using PrimarSql.Data.Providers;
 
@@ -13,14 +14,7 @@ namespace PrimarSql.Data.Planners
     {
         public override DbDataReader Execute()
         {
-            try
-            {
-                return ExecuteAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return ExecuteAsync().GetResultSynchronously();
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
@@ -49,7 +43,10 @@ namespace PrimarSql.Data.Planners
             foreach (var column in QueryInfo.TableColumns)
                 request.AttributeDefinitions.Add(new AttributeDefinition(column.ColumnName, DataTypeToScalarAttributeType(column.DataType)));
 
-            await Context.Client.UpdateTableAsync(request, cancellationToken);
+            var response = await Context.Client.UpdateTableAsync(request, cancellationToken);
+
+            if (response.TableDescription.TableStatus == TableStatus.UPDATING)
+                await Context.Client.WaitForTableUpdatingAsync(QueryInfo.TableName, cancellationToken);
 
             return new PrimarSqlDataReader(new EmptyDataProvider());
         }

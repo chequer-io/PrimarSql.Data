@@ -10,21 +10,21 @@ namespace PrimarSql.Data.Models
     internal sealed class QueryContext
     {
         private readonly Dictionary<string, TableDescription> _tableDescriptions = new Dictionary<string, TableDescription>();
-        private AmazonDynamoDBClient _client;
+        private IAmazonDynamoDB _client;
 
-        public AmazonDynamoDBClient Client => _client ?? throw new NullReferenceException("Client should not be null.");
+        public IAmazonDynamoDB Client => _client ?? throw new NullReferenceException("Client should not be null.");
 
         public IList<IDocumentFilter> DocumentFilters { get; set; }
 
         public PrimarSqlCommand Command { get; set; }
 
-        public QueryContext(AmazonDynamoDBClient client, PrimarSqlCommand command)
+        public QueryContext(IAmazonDynamoDB client, PrimarSqlCommand command)
         {
             Command = command;
             SetClient(client);
         }
 
-        public void SetClient(AmazonDynamoDBClient client)
+        public void SetClient(IAmazonDynamoDB client)
         {
             _client = client;
         }

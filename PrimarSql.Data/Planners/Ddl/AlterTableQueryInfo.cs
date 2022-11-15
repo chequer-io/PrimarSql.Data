@@ -19,7 +19,7 @@ namespace PrimarSql.Data.Planners
             var name = tableColumn.ColumnName;
 
             if (_tableColumns.ContainsKey(name))
-                throw new InvalidOperationException($"Already '{name}' is defined.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, $"Already '{name}' is defined.");
 
             _tableColumns[name] = tableColumn;
         }

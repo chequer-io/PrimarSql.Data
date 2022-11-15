@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
 using PrimarSql.Data.Expressions.Generators;
+using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Planners;
 using PrimarSql.Data.Processors;
@@ -90,14 +91,7 @@ namespace PrimarSql.Data.Providers
 
         public override bool Next()
         {
-            try
-            {
-                return !Context.Command.IsCanceled && NextAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return !Context.Command.IsCanceled && NextAsync().GetResultSynchronously();
         }
 
         public override async Task<bool> NextAsync(CancellationToken cancellationToken = default)

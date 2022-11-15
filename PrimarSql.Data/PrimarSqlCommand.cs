@@ -5,6 +5,7 @@ using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
+using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Visitors;
 
@@ -51,7 +52,7 @@ namespace PrimarSql.Data
             set => throw new NotSupportedException();
         }
 
-        private AmazonDynamoDBClient Client => ((PrimarSqlConnection)Connection).Client;
+        private IAmazonDynamoDB Client => ((PrimarSqlConnection)Connection).Client;
         #endregion
 
         internal CancellationTokenSource CancellationTokenSource { get; private set; }
@@ -91,19 +92,12 @@ namespace PrimarSql.Data
 
         protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
-            try
-            {
-                return ExecuteDbDataReaderAsync(behavior, CancellationToken.None).Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return ExecuteDbDataReaderAsync(behavior, CancellationToken.None).GetResultSynchronously();
         }
 
         protected override Task<DbDataReader> ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
         {
-            var root = PrimarSqlParser.Parse(CommandText);
+            var root = Parse(CommandText);
             var queryPlanner = ContextVisitor.Visit(root);
 
             queryPlanner.Context = new QueryContext(Client, this)
@@ -115,6 +109,18 @@ namespace PrimarSql.Data
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, CancellationTokenSource.Token);
 
             return queryPlanner.ExecuteAsync(linkedCts.Token);
+        }
+
+        private Internal.PrimarSqlParser.RootContext Parse(string commandText)
+        {
+            try
+            {
+                return PrimarSqlParser.Parse(commandText);
+            }
+            catch (PrimarSqlSyntaxException e)
+            {
+                throw new PrimarSqlException(PrimarSqlError.Syntax, e);
+            }
         }
 
         public override void Cancel()

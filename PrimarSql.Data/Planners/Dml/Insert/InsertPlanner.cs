@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Providers;
@@ -26,14 +27,7 @@ namespace PrimarSql.Data.Planners
 
         public override DbDataReader Execute()
         {
-            try
-            {
-                return ExecuteAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return ExecuteAsync().GetResultSynchronously();
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
@@ -45,12 +39,12 @@ namespace PrimarSql.Data.Planners
             _sortKeyName = keySchema.FirstOrDefault(schema => schema.KeyType == KeyType.RANGE)?.AttributeName;
 
             if (QueryInfo.InsertValueType == InsertValueType.Subquery)
-                throw new NotSupportedException("Insert from select feature is not supported yet.");
+                throw new NotSupportedFeatureException("Insert from select feature is not supported yet.");
 
             switch (QueryInfo.InsertValueType)
             {
                 case InsertValueType.Subquery:
-                    throw new NotSupportedException("Insert from select feature is not supported yet.");
+                    throw new NotSupportedFeatureException("Insert from select feature is not supported yet.");
 
                 case InsertValueType.RawValues:
                 {
@@ -58,12 +52,12 @@ namespace PrimarSql.Data.Planners
                         QueryInfo.Columns = keySchema.Select(schema => schema.AttributeName).ToArray();
 
                     if (!QueryInfo.Columns.Contains(_hashKeyName))
-                        throw new NotSupportedException("The value must contain the hash key.");
+                        throw new NotSupportedFeatureException("The value must contain the hash key.");
 
                     foreach (IEnumerable<IExpression> row in QueryInfo.Rows)
                     {
-                        await CallPutItemAsync(GetItemFromRawValue(row), cancellationToken);
-                        _insertCount++;
+                        if (await CallPutItemAsync(GetItemFromRawValue(row), cancellationToken))
+                            _insertCount++;
                     }
 
                     break;
@@ -73,8 +67,8 @@ namespace PrimarSql.Data.Planners
                 {
                     foreach (Dictionary<string, AttributeValue> row in QueryInfo.JsonValues)
                     {
-                        await CallPutItemAsync(row, cancellationToken);
-                        _insertCount++;
+                        if (await CallPutItemAsync(row, cancellationToken))
+                            _insertCount++;
                     }
 
                     break;
@@ -92,7 +86,7 @@ namespace PrimarSql.Data.Planners
             foreach (var cell in row)
             {
                 if (i + 1 > QueryInfo.Columns.Length)
-                    throw new InvalidOperationException("The number of values cannot exceed the number of columns.");
+                    throw new ColumnValueCountExceedException();
 
                 if (cell is LiteralExpression literalExpression)
                 {
@@ -103,19 +97,19 @@ namespace PrimarSql.Data.Planners
                 }
                 else
                 {
-                    throw new NotSupportedException($"Not Support '{cell.GetType().Name}' type to insert value.");
+                    throw new NotSupportedFeatureException($"Not Support '{cell.GetType().Name}' type to insert value.");
                 }
 
                 i++;
             }
 
             if (item.Count != QueryInfo.Columns.Length)
-                throw new InvalidOperationException("The number of values does not match the number of columns.");
+                throw new ColumnValueCountDifferentException();
 
             return item;
         }
 
-        private async Task CallPutItemAsync(Dictionary<string, AttributeValue> item, CancellationToken cancellationToken)
+        private async Task<bool> CallPutItemAsync(Dictionary<string, AttributeValue> item, CancellationToken cancellationToken)
         {
             _request = new PutItemRequest
             {
@@ -128,15 +122,19 @@ namespace PrimarSql.Data.Planners
             try
             {
                 await Context.Client.PutItemAsync(_request, cancellationToken);
+                return true;
             }
-            catch (AggregateException e)
+            catch (PrimarSqlException e) when (e.Error is PrimarSqlError.ConditionalCheckFailed && QueryInfo.IgnoreDuplicate)
             {
-                var innerException = e.InnerExceptions[0];
-
-                if (innerException is ConditionalCheckFailedException && QueryInfo.IgnoreDuplicate)
-                    return;
-
-                throw new Exception($"Error while insert item (Count: {_insertCount}){Environment.NewLine}{innerException.Message}");
+                // ignore duplicate
+                return false;
+            }
+            catch (Exception e) when (e is not PrimarSqlException)
+            {
+                throw new PrimarSqlException(
+                    PrimarSqlError.Unknown,
+                    $"Error while insert item (Count: {_insertCount}){Environment.NewLine}{e.Message}"
+                );
             }
         }
 
@@ -149,7 +147,7 @@ namespace PrimarSql.Data.Planners
             var hashKeyAttrValue = item.FirstOrDefault(x => x.Key == _hashKeyName).Value;
 
             if (hashKeyAttrValue == null)
-                throw new InvalidOperationException($"Item does not contains Hash key: {_hashKeyName}");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, $"Item does not contains Hash key: {_hashKeyName}");
 
             var sb = new StringBuilder();
 

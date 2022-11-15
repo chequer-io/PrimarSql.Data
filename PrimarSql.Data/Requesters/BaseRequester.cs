@@ -12,7 +12,7 @@ namespace PrimarSql.Data.Requesters
     {
         public PrimarSqlCommand Command { get; set; }
 
-        public AmazonDynamoDBClient Client { get; private set; }
+        public IAmazonDynamoDB Client { get; private set; }
 
         public SelectQueryInfo QueryInfo { get; private set; }
 
@@ -41,7 +41,7 @@ namespace PrimarSql.Data.Requesters
         public Dictionary<string, AttributeValue> Current { get; protected set; }
 
         public void SetParameters(
-            AmazonDynamoDBClient client,
+            IAmazonDynamoDB client,
             SelectQueryInfo queryInfo,
             ExpressionAttributeName[] expressionAttributeNames,
             ExpressionAttributeValue[] expressionAttributeValues,

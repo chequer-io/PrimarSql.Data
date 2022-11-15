@@ -40,19 +40,13 @@ namespace PrimarSql.Data.Planners
 
         public override DbDataReader Execute()
         {
-            try
-            {
-                return ExecuteAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return ExecuteAsync().GetResultSynchronously();
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
         {
             _deletedCount = 0;
+
             var selectQueryInfo = new SelectQueryInfo
             {
                 WhereExpression = QueryInfo.WhereExpression,
@@ -63,7 +57,7 @@ namespace PrimarSql.Data.Planners
 
             // TODO: Performance issue, need to performance enhancement.
             if (QueryInfo.WhereExpression == null)
-                throw new InvalidOperationException("Update not support without where expression.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Update not support without where expression.");
 
             var planner = new SelectPlanner
             {
@@ -92,10 +86,12 @@ namespace PrimarSql.Data.Planners
                 {
                     await Context.Client.DeleteItemAsync(request, cancellationToken);
                 }
-                catch (AggregateException e)
+                catch (Exception e) when (e is not PrimarSqlException)
                 {
-                    var innerException = e.InnerExceptions[0];
-                    throw new Exception($"Error while delete Item (Key: {reader.GetName(0)}){Environment.NewLine}{innerException.Message}");
+                    throw new PrimarSqlException(
+                        PrimarSqlError.Unknown,
+                        $"Error while delete Item (Key: {reader.GetName(0)}){Environment.NewLine}{e.Message}"
+                    );
                 }
 
                 _deletedCount++;

@@ -1,5 +1,6 @@
 ﻿using System;
 using Antlr4.Runtime;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Models.Columns;
 
@@ -14,12 +15,12 @@ namespace PrimarSql.Data.Utilities
 
         public static T ThrowNotSupportedContext<T>(ParserRuleContext context)
         {
-            throw new NotSupportedException($"Not Supported Context. (Name: {context.GetType().Name[..^7]})");
+            throw new NotSupportedFeatureException($"Not supported context '{context.GetType().Name[..^7]}'");
         }
 
         public static T ThrowNotSupportedFeature<T>(string featureName)
         {
-            throw new NotSupportedException($"Not Supported {featureName} Feature.");
+            throw new NotSupportedFeatureException($"Not supported feature '{featureName}'");
         }
 
         public static readonly string[] NumberTypes =
@@ -79,7 +80,7 @@ namespace PrimarSql.Data.Utilities
                     return "SS";
             }
             
-            throw new InvalidOperationException($"Unknown {dataType} type.");
+            throw new PrimarSqlException(PrimarSqlError.Syntax, $"Unknown data type '{dataType}'");
         }
     }
 }

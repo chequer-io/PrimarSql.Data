@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners.Describe
@@ -18,14 +19,7 @@ namespace PrimarSql.Data.Planners.Describe
 
         public override DbDataReader Execute()
         {
-            try
-            {
-                return ExecuteAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return ExecuteAsync().GetResultSynchronously();
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)

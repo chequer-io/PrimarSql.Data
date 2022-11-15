@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Utilities;
 
 namespace PrimarSql.Data.Expressions.Generators
@@ -76,7 +77,7 @@ namespace PrimarSql.Data.Expressions.Generators
                 keySchemaElements =
                     FindLocalSecondaryIndex(IndexName) ??
                     FindGlobalSecondaryIndex(IndexName) ??
-                    throw new InvalidOperationException($"{TableDescription.TableName} table has no '{IndexName}' Index.");
+                    throw new PrimarSqlException(PrimarSqlError.Syntax, $"{TableDescription.TableName} table has no '{IndexName}' Index.");
             }
 
             foreach (var element in keySchemaElements)
@@ -91,7 +92,7 @@ namespace PrimarSql.Data.Expressions.Generators
                 }
                 else
                 {
-                    throw new NotSupportedException($"KeyType '{element.KeyType.Value}' is not supported.");
+                    throw new NotSupportedFeatureException($"KeyType '{element.KeyType.Value}' is not supported.");
                 }
             }
         }

@@ -1,7 +1,7 @@
-﻿using System;
-using System.Data.Common;
+﻿using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners.Show
@@ -15,14 +15,7 @@ namespace PrimarSql.Data.Planners.Show
 
         public override DbDataReader Execute()
         {
-            try
-            {
-                return ExecuteAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return ExecuteAsync().GetResultSynchronously();
         }
 
         public override Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)

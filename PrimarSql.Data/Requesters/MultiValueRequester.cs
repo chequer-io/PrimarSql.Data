@@ -34,14 +34,7 @@ namespace PrimarSql.Data.Requesters
 
         public override bool Next()
         {
-            try
-            {
-                return NextAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return NextAsync().GetResultSynchronously();
         }
 
         public override async Task<bool> NextAsync(CancellationToken cancellationToken = default)

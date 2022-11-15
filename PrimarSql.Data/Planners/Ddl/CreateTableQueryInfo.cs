@@ -32,7 +32,7 @@ namespace PrimarSql.Data.Planners
                 if (string.IsNullOrEmpty(definedColumn.DataType))
                 {
                     if (keyTableColumn.IsHashKey || keyTableColumn.IsSortKey)
-                        throw new InvalidOperationException($"Key '{name}' constraint definition is duplicated.");
+                        throw new PrimarSqlException(PrimarSqlError.Syntax, $"Key '{name}' constraint definition is duplicated.");
 
                     keyTableColumn.IsHashKey = definedColumn.IsHashKey;
                     keyTableColumn.IsSortKey = definedColumn.IsSortKey;
@@ -42,20 +42,20 @@ namespace PrimarSql.Data.Planners
                     return;
                 }
 
-                throw new InvalidOperationException($"Already '{name}' is defined.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, $"Already '{name}' is defined.");
             }
 
             if (keyTableColumn.IsHashKey)
             {
                 if (HashKeyColumn != null)
-                    throw new InvalidOperationException($"Hash key duplicated. (name: '{_hashKeyName}', '{name}')");
+                    throw new PrimarSqlException(PrimarSqlError.Syntax, $"Hash key duplicated. (name: '{_hashKeyName}', '{name}')");
 
                 _hashKeyName = name;
             }
             else if (keyTableColumn.IsSortKey)
             {
                 if (SortKeyColumn != null)
-                    throw new InvalidOperationException($"Sort key duplicated. (sort key: '{_sortKeyName}', '{name}')");
+                    throw new PrimarSqlException(PrimarSqlError.Syntax, $"Sort key duplicated. (sort key: '{_sortKeyName}', '{name}')");
 
                 _sortKeyName = name;
             }
@@ -69,7 +69,7 @@ namespace PrimarSql.Data.Planners
             {
                 var column = _tableColumns[tableName];   
                 if (column.IsHashKey || column.IsSortKey)
-                    throw new InvalidOperationException($"Key '{tableName}' constraint definition is duplicated.");
+                    throw new PrimarSqlException(PrimarSqlError.Syntax, $"Key '{tableName}' constraint definition is duplicated.");
                 
                 column.IsHashKey = isHashKey;
                 column.IsSortKey = !isHashKey;
@@ -95,7 +95,7 @@ namespace PrimarSql.Data.Planners
         public void AddIndexDefinition(IndexDefinition definition)
         {
             if (_indexDefinitions.ContainsKey(definition.IndexName))
-                throw new InvalidOperationException($"Index name '{definition.IndexName}' duplicate.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, $"Index name '{definition.IndexName}' duplicate.");
 
             _indexDefinitions[definition.IndexName] = definition;
         }
@@ -103,10 +103,10 @@ namespace PrimarSql.Data.Planners
         public void Validate()
         {
             if (_tempItemCount != 0)
-                throw new InvalidOperationException("Constraint definition column name must exists.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Constraint definition column name must exists.");
             
             if (HashKeyColumn == null)
-                throw new InvalidOperationException($"No hash key defined for Table '{TableName}'.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, $"No hash key defined for Table '{TableName}'.");
         }
     }
 }

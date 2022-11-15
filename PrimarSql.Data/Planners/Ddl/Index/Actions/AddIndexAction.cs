@@ -11,7 +11,7 @@ namespace PrimarSql.Data.Planners.Index
         public override void Action(List<GlobalSecondaryIndexUpdate> indexUpdates, TableDescription tableDescription)
         {
             if (IndexDefinition.IsLocalIndex)
-                throw new InvalidOperationException("Cannot add local index. Local index can add when create table.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Cannot add local index. Local index can add when create table.");
 
             var provisionedThroughput = new ProvisionedThroughput(
                 tableDescription.ProvisionedThroughput.ReadCapacityUnits,

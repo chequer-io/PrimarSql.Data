@@ -3,6 +3,7 @@ using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Models.Columns;
 using PrimarSql.Data.Planners;
 using PrimarSql.Data.Processors;
@@ -55,7 +56,7 @@ namespace PrimarSql.Data.Providers
             if (queryInfo.Columns.FirstOrDefault() is CountFunctionColumn countFunctionColumn)
                 return new CountFunctionProcessor(countFunctionColumn.Alias);
 
-            throw new NotSupportedException("Not supported column type");
+            throw new NotSupportedFeatureException("Not supported column type");
         }
 
         public virtual void Dispose()

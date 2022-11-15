@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models.Columns;
@@ -51,7 +52,7 @@ namespace PrimarSql.Data.Planners
             else if (QueryInfo.UpdatedElements.All(x => !x.IsRemove))
                 isRemove = false;
             else
-                throw new InvalidOperationException("Update element cannot be different type between elements.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Update element cannot be different type between elements.");
 
             var sb = new StringBuilder(isRemove ? "REMOVE" : "SET");
 
@@ -85,8 +86,16 @@ namespace PrimarSql.Data.Planners
                     break;
 
                 case MultipleExpression multipleExpression:
-                    if (!multipleExpression.Expressions.All(x => x is LiteralExpression))
-                        throw new InvalidOperationException("MultipleExpression contains only support LiteralExpression");
+                    IEnumerable<string> nonLiteralExpressions = multipleExpression.Expressions
+                        .Where(x => x is not LiteralExpression)
+                        .Select(x => x.GetType().Name)
+                        .Distinct();
+
+                    if (nonLiteralExpressions.Any())
+                    {
+                        string expressions = string.Join(", ", nonLiteralExpressions.Select(x => $"'{x}'"));
+                        throw new NotSupportedFeatureException($"Not supported expressions {expressions} in update");
+                    }
 
                     value = multipleExpression.Expressions
                         .Cast<LiteralExpression>()
@@ -98,7 +107,7 @@ namespace PrimarSql.Data.Planners
                     return $"list_append({name}, {GetValue(arrayAppendExpression.AppendItem)})";
 
                 default:
-                    throw new InvalidOperationException($"Not Supported '{expression.GetType().Name}'.");
+                    throw new NotSupportedFeatureException($"Not supported expression '{expression.GetType().Name}'.");
             }
 
             return GetAttributeValue(value);
@@ -106,20 +115,13 @@ namespace PrimarSql.Data.Planners
 
         public override DbDataReader Execute()
         {
-            try
-            {
-                return ExecuteAsync().Result;
-            }
-            catch (AggregateException e) when (e.InnerExceptions.Count == 1)
-            {
-                throw e.InnerExceptions[0];
-            }
+            return ExecuteAsync().GetResultSynchronously();
         }
 
         public override async Task<DbDataReader> ExecuteAsync(CancellationToken cancellationToken = default)
         {
             int updatedCount = 0;
-            
+
             var selectQueryInfo = new SelectQueryInfo
             {
                 WhereExpression = QueryInfo.WhereExpression,
@@ -130,7 +132,7 @@ namespace PrimarSql.Data.Planners
 
             // TODO: Performance issue, need to performance enhancement.
             if (QueryInfo.WhereExpression == null)
-                throw new InvalidOperationException("Update not support without where expression.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Update not support without where expression.");
 
             var planner = new SelectPlanner
             {
@@ -161,10 +163,12 @@ namespace PrimarSql.Data.Planners
                 {
                     await Context.Client.UpdateItemAsync(request, cancellationToken);
                 }
-                catch (AggregateException e)
+                catch (Exception e) when (e is not PrimarSqlException)
                 {
-                    var innerException = e.InnerExceptions[0];
-                    throw new Exception($"Error while update Item (Key: {reader.GetName(0)}){Environment.NewLine}{innerException.Message}");
+                    throw new PrimarSqlException(
+                        PrimarSqlError.Unknown,
+                        $"Error while update Item (Key: {reader.GetName(0)}){Environment.NewLine}{e.Message}"
+                    );
                 }
 
                 updatedCount++;

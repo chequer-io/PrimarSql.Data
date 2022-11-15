@@ -1,27 +1,27 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using PrimarSql.Data.Extensions;
 
 namespace PrimarSql.Data.Providers
 {
     internal sealed class ShowTableProvider : PaginatedDataProvider
     {
-        private readonly AmazonDynamoDBClient _client;
+        private readonly IAmazonDynamoDB _client;
         private string _lastEvaluatedTableName;
         private bool _isClosed;
 
-        public ShowTableProvider(AmazonDynamoDBClient client) : base(new[] { ("name", typeof(string)) })
+        public ShowTableProvider(IAmazonDynamoDB client) : base(new[] { ("name", typeof(string)) })
         {
             _client = client;
         }
 
         protected override IEnumerator<object[]> Fetch()
         {
-            return FetchAsync(default).Result;
+            return FetchAsync(default).GetResultSynchronously();
         }
 
         protected override async Task<IEnumerator<object[]>> FetchAsync(CancellationToken cancellationToken)

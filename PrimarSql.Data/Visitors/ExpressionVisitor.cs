@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Expressions;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
@@ -286,7 +287,7 @@ namespace PrimarSql.Data.Visitors
                     };
 
                 default:
-                    throw new NotSupportedException($"'{context.GetType().Name[..^7]}' constant type not supported.");
+                    throw new NotSupportedFeatureException($"Not supported constant type '{context.GetType().Name[..^7]}'");
             }
         }
 
@@ -353,7 +354,7 @@ namespace PrimarSql.Data.Visitors
         public static FunctionExpression VisitBuiltInFunctionCall(BuiltInFunctionCallContext context)
         {
             // TODO: Implement
-            throw new NotSupportedException("Not supported built-in functions yet.");
+            throw new NotSupportedFeatureException("Not supported built-in functions yet.");
         }
 
         public static FunctionExpression VisitNativeFunctionCall(NativeFunctionCallContext context)

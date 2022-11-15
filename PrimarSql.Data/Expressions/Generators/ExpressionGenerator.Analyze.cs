@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using PrimarSql.Data.Exceptions;
 using PrimarSql.Data.Extensions;
 using PrimarSql.Data.Models;
 using PrimarSql.Data.Models.Conditions;
@@ -44,7 +45,7 @@ namespace PrimarSql.Data.Expressions.Generators
                     return AnalyzeUnaryExpression(unaryExpression, parent, depth);
             }
 
-            throw new NotSupportedException($"Not Supported {expression.GetType().Name}.");
+            throw new NotSupportedFeatureException($"Not supported expression '{expression.GetType().Name}'");
         }
 
         #region MultipleExpression
@@ -61,7 +62,7 @@ namespace PrimarSql.Data.Expressions.Generators
         private ICondition AnalyzeNestedExpression(MultipleExpression expression, IExpression parent, int depth)
         {
             if (expression.Expressions.Length > 1)
-                throw new InvalidOperationException("Too many expressions.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Too many expressions.");
 
             return new NestedCondition(AnalyzeInternal(expression.Expressions[0], expression, depth));
         }
@@ -137,7 +138,7 @@ namespace PrimarSql.Data.Expressions.Generators
         private StringCondition AnalyzeLiteralExpression(LiteralExpression expression, IExpression parent, int _)
         {
             if (parent == null)
-                throw new InvalidOperationException("Literal value cannot be used alone.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Literal value cannot be used alone.");
 
             var valueName = Context.GetAttributeValue(expression.Value.ToAttributeValue());
 
@@ -149,7 +150,7 @@ namespace PrimarSql.Data.Expressions.Generators
         private StringCondition AnalyzeColumnExpression(MemberExpression expression, IExpression parent, int depth)
         {
             if (parent == null)
-                throw new InvalidOperationException("Literal value cannot be used alone.");
+                throw new PrimarSqlException(PrimarSqlError.Syntax, "Literal value cannot be used alone.");
 
             var columnName = Context.GetAttributeName(expression.Name.ToName());
 
@@ -160,7 +161,7 @@ namespace PrimarSql.Data.Expressions.Generators
         #region Function
         private FunctionCondition AnalyzeFunctionExpression(FunctionExpression expression, IExpression parent, int depth)
         {
-            if (!(expression.Member is MemberExpression memberExpression))
+            if (expression.Member is not MemberExpression memberExpression)
                 throw new InvalidOperationException("Function member must MemberExpression.");
 
             return new FunctionCondition

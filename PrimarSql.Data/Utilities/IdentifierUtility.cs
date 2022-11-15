@@ -98,7 +98,7 @@ namespace PrimarSql.Data.Utilities
                 {
                     var i = buffer.ToString()[1..^1];
                     if (i.Length == 0)
-                        throw new InvalidOperationException("Identifier index is empty");
+                        throw new PrimarSqlException(PrimarSqlError.Syntax, "Identifier index is empty");
                     result.Add(new IndexPart(int.Parse(i)));
                 }
                 else
