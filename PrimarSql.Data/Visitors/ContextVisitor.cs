@@ -708,10 +708,11 @@ namespace PrimarSql.Data.Visitors
         public static DropTablePlanner VisitDropTableContext(DropTableContext context)
         {
             IEnumerable<string> targetTables = context.tableName().Select(VisitTableName);
+            var ifExists = context.ifExists() != null;
 
             var dropTablePlanner = new DropTablePlanner
             {
-                QueryInfo = new DropTableQueryInfo(targetTables)
+                QueryInfo = new DropTableQueryInfo(targetTables, ifExists)
             };
 
             return dropTablePlanner;

@@ -6,9 +6,12 @@ namespace PrimarSql.Data.Planners
     {
         public IEnumerable<string> TargetTables { get; }
 
-        public DropTableQueryInfo(IEnumerable<string> targetTables)
+        public bool IfExists { get; }
+
+        public DropTableQueryInfo(IEnumerable<string> targetTables, bool ifExists)
         {
             TargetTables = targetTables;
+            IfExists = ifExists;
         }
     }
 }

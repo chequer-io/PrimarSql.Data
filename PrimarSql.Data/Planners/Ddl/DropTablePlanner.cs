@@ -2,6 +2,7 @@ using System;
 using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.DynamoDBv2.Model;
 using PrimarSql.Data.Providers;
 
 namespace PrimarSql.Data.Planners
@@ -27,6 +28,10 @@ namespace PrimarSql.Data.Planners
                 try
                 {
                     await Context.Client.DeleteTableAsync(targetTable, cancellationToken);
+                }
+                catch (ResourceNotFoundException) when (QueryInfo.IfExists)
+                {
+                    // ignored
                 }
                 catch (AggregateException e)
                 {
