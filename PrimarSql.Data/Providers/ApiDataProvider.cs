@@ -107,7 +107,11 @@ namespace PrimarSql.Data.Providers
                     return false;
 
                 processor.Read = true;
-                _current = new object[] { _requester.RequestCount() };
+
+                _current = _requester is not null
+                    ? new object[] { _requester.RequestCount() }
+                    : new object[] { _tableDescription.ItemCount };
+
                 return true;
             }
 
@@ -131,6 +135,15 @@ namespace PrimarSql.Data.Providers
             var generateResult = generator.Analyze();
 
             var sortKeyExists = !string.IsNullOrEmpty(generator.SortKeyName);
+
+            if (Processor is CountFunctionProcessor &&
+                generateResult.FilterExpression is null &&
+                generateResult.HashKey is null &&
+                generateResult.SortKey is null)
+            {
+                _requester = null;
+                return;
+            }
 
             // Hash key only in this index
             if (!sortKeyExists)
