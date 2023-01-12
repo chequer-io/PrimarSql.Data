@@ -170,6 +170,23 @@ namespace PrimarSql.Data
                 return profile.GetAWSCredentials(sharedFile);
             }
 
+            if (!string.IsNullOrWhiteSpace(builder.TargetRoleArn) &&
+                !string.IsNullOrWhiteSpace(builder.ExternalId))
+            {
+                var opt = new AssumeRoleAWSCredentialsOptions
+                {
+                    ExternalId = builder.ExternalId,
+                    DurationSeconds = builder.DurationSeconds
+                };
+
+                return new AssumeRoleAWSCredentials(
+                    FallbackCredentialsFactory.GetCredentials(),
+                    builder.TargetRoleArn,
+                    Guid.NewGuid().ToString(),
+                    opt
+                );
+            }
+
             if (!string.IsNullOrWhiteSpace(builder.ProfileName))
             {
                 // Credentials from config
