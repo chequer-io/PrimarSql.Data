@@ -176,8 +176,7 @@ namespace PrimarSql.Data
                 var opt = new AssumeRoleAWSCredentialsOptions
                 {
                     ExternalId = builder.ExternalId,
-                    // Credential will expire after 1 hour
-                    DurationSeconds = 60 * 60
+                    DurationSeconds = builder.DurationSeconds
                 };
 
                 return new AssumeRoleAWSCredentials(

@@ -66,6 +66,12 @@ namespace PrimarSql.Data
             get => GetValue<string>(nameof(TargetRoleArn));
             set => SetValue(nameof(TargetRoleArn), value);
         }
+
+        public int DurationSeconds
+        {
+            get => GetValue<int>(nameof(DurationSeconds));
+            set => SetValue(nameof(DurationSeconds), value);
+        }
         #endregion
 
         #region Constructor
