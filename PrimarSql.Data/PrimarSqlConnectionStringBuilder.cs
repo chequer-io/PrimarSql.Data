@@ -54,6 +54,18 @@ namespace PrimarSql.Data
             get => GetValue<string>(nameof(ClientName));
             set => SetValue(nameof(ClientName), value);
         }
+
+        public string ExternalId
+        {
+            get => GetValue<string>(nameof(ExternalId));
+            set => SetValue(nameof(ExternalId), value);
+        }
+
+        public string TargetRoleArn
+        {
+            get => GetValue<string>(nameof(TargetRoleArn));
+            set => SetValue(nameof(TargetRoleArn), value);
+        }
         #endregion
 
         #region Constructor

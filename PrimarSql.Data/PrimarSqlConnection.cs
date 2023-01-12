@@ -170,6 +170,24 @@ namespace PrimarSql.Data
                 return profile.GetAWSCredentials(sharedFile);
             }
 
+            if (!string.IsNullOrWhiteSpace(builder.TargetRoleArn) &&
+                !string.IsNullOrWhiteSpace(builder.ExternalId))
+            {
+                var opt = new AssumeRoleAWSCredentialsOptions
+                {
+                    ExternalId = builder.ExternalId,
+                    // Credential will expire after 1 hour
+                    DurationSeconds = 60 * 60
+                };
+
+                return new AssumeRoleAWSCredentials(
+                    FallbackCredentialsFactory.GetCredentials(),
+                    builder.TargetRoleArn,
+                    Guid.NewGuid().ToString(),
+                    opt
+                );
+            }
+
             if (!string.IsNullOrWhiteSpace(builder.ProfileName))
             {
                 // Credentials from config
