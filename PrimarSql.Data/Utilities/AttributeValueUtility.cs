@@ -2,6 +2,7 @@
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
 using Newtonsoft.Json.Linq;
+using PrimarSql.Data.Models;
 
 namespace PrimarSql.Data.Utilities
 {
@@ -42,10 +43,10 @@ namespace PrimarSql.Data.Utilities
                 return new JArray(value.SS);
 
             if (value.NS.Count > 0)
-                return new JArray(value.NS.Select(double.Parse));
+                return new JArray(value.NS.Select(n => new JDynamoDBNumber(n)));
             
             if (!string.IsNullOrEmpty(value.N))
-                return new JValue(double.Parse(value.N));
+                return new JDynamoDBNumber(value.N);
 
             return value.S;
         }
